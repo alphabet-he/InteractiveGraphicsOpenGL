@@ -1,4 +1,5 @@
 #include "cMyApplication.h"
+#include <CyCode/cyTriMesh.h>
 
 cMyApplication::cMyApplication()
 {
@@ -17,6 +18,11 @@ void cMyApplication::HandleKeyboardFunc(unsigned char key, int x, int y)
 void cMyApplication::CustomInitialization()
 {
 	glutTimerFunc(0, ChangeBackground, 0);
+
+	// mesh
+	cy::TriMesh* i_mesh = new cy::TriMesh();
+	i_mesh->LoadFromFileObj("Assets/teapot.obj");
+	UploadTriMeshVertices(i_mesh);
 }
 
 void cMyApplication::DisplayFunc()

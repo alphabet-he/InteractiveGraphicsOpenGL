@@ -26,6 +26,8 @@ private:
 	static void _HandleKeyboardFunc(unsigned char key, int x, int y);
 
 protected:
+	void BindTriMeshVertices(cyTriMesh* i_mesh);
+
 	virtual void DisplayFunc();
 	virtual void IdleFunc();
 	virtual void HandleKeyboardFunc(unsigned char key, int x, int y);
