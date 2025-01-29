@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include <FreeGLUT/include/GL/freeglut.h>
 #include <GLEW/include/GL/glew.h>
+#include <FreeGLUT/include/GL/freeglut.h>
 #include <CyCode/cyTriMesh.h>
+#include <CyCode/cyGL.h>

@@ -101,10 +101,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;$(SolutionDir)External\GLEW\lib\Release\Win32\glew32.lib;$(SolutionDir)External\GLEW\lib\Release\x64\glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\bin\freeglutd.dll" "$(OutDir)"
+      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
+xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
 xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -123,10 +124,11 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;$(SolutionDir)External\GLEW\lib\Release\Win32\glew32.lib;$(SolutionDir)External\GLEW\lib\Release\x64\glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\bin\freeglutd.dll" "$(OutDir)"
+      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
+xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
 xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -141,10 +143,11 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;$(SolutionDir)External\GLEW\lib\Release\Win32\glew32.lib;$(SolutionDir)External\GLEW\lib\Release\x64\glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\bin\freeglutd.dll" "$(OutDir)"
+      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
+xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
 xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -163,10 +166,11 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\lib\freeglutd.lib;$(SolutionDir)External\GLEW\lib\Release\Win32\glew32.lib;$(SolutionDir)External\GLEW\lib\Release\x64\glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\x64-Debug\bin\freeglutd.dll" "$(OutDir)"
+      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
+xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
 xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

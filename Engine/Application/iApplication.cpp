@@ -35,21 +35,6 @@ void iApplication::Initialize(int argc, char** argv)
 	// initialize glew
 	glewInit();
 
-	// generate VAO and VBO
-	GLuint VAO, VBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	// bind VAO
-	glBindVertexArray(VAO);
-
-	// bind VBO
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	// configure VAO as positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-	glEnableVertexAttribArray(0);
-
 	// set up functions
 	glutDisplayFunc(_DisplayFunc);
 	glutIdleFunc(_IdleFunc);
@@ -64,23 +49,54 @@ void iApplication::Run()
 	glutMainLoop();
 }
 
-void iApplication::UploadTriMeshVertices(cyTriMesh* i_mesh)
+void iApplication::UploadTriMeshVertices()
 {
-	GLfloat* vertices = new GLfloat[i_mesh->NV() * 3];
-	for (int i = 0; i < i_mesh->NV(); i++) {
-		vertices[i * 3 + 0] = i_mesh->V(i).x;
-		vertices[i * 3 + 1] = i_mesh->V(i).y;
-		vertices[i * 3 + 2] = i_mesh->V(i).z;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	std::vector<GLfloat> i_vertices;
+	std::vector<GLuint> i_indices;
+
+	for (int i = 0; i < m_meshToRender->NV(); i++) {
+		i_vertices.push_back(m_meshToRender->V(i).x);
+		i_vertices.push_back(m_meshToRender->V(i).y);
+		i_vertices.push_back(m_meshToRender->V(i).z);
+	}
+	for (int i = 0; i < m_meshToRender->NF(); i++) {
+		i_indices.push_back(m_meshToRender->F(i).v[0]);
+		i_indices.push_back(m_meshToRender->F(i).v[1]);
+		i_indices.push_back(m_meshToRender->F(i).v[2]);
 	}
 
-	// upload VBO data
-	glBufferData(GL_ARRAY_BUFFER,
-		i_mesh->NV() * 3 * sizeof(GLfloat),
-		vertices,
-		GL_STATIC_DRAW);
+	// Bind VAO (always bind VAO first)
+	glBindVertexArray(VAO);
 
-	// the data is already uploaded to GPU, so vertices can be freed
-	delete[] vertices;
+	// Bind VBO and upload vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, i_vertices.size() * sizeof(GLfloat), i_vertices.data(), GL_STATIC_DRAW);
+
+	// Set up vertex attributes *before* binding EBO
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Now bind and upload index buffer (EBO)
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, i_indices.size() * sizeof(GLuint), i_indices.data(), GL_STATIC_DRAW);
+
+}
+
+void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
+{
+	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+	i_vertexShader->CompileFile(i_vertexShaderFilename, GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile(i_fragmentShaderFilename, GL_FRAGMENT_SHADER);
+	ShaderProgram = glCreateProgram();
+	glAttachShader(ShaderProgram, i_vertexShader->GetID());
+	glAttachShader(ShaderProgram, i_fragmentShader->GetID());
+	glLinkProgram(ShaderProgram);
+
 }
 
 void iApplication::DisplayFunc()

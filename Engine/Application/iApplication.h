@@ -7,6 +7,9 @@ protected:
 	uint16_t m_windowHeight;
 	uint16_t m_windowWidth;
 	std::string m_windowTitle;
+	GLuint ShaderProgram;
+	cy::TriMesh* m_meshToRender;
+	GLuint VAO, VBO, EBO;
 
 	bool m_running = false;
 
@@ -26,7 +29,9 @@ private:
 	static void _HandleKeyboardFunc(unsigned char key, int x, int y);
 
 protected:
-	void BindTriMeshVertices(cyTriMesh* i_mesh);
+	void UploadTriMeshVertices();
+
+	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 
 	virtual void DisplayFunc();
 	virtual void IdleFunc();

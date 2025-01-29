@@ -20,14 +20,19 @@ void cMyApplication::CustomInitialization()
 	glutTimerFunc(0, ChangeBackground, 0);
 
 	// mesh
-	cy::TriMesh* i_mesh = new cy::TriMesh();
-	i_mesh->LoadFromFileObj("Assets/teapot.obj");
-	UploadTriMeshVertices(i_mesh);
+	m_meshToRender = new cy::TriMesh();
+	m_meshToRender->LoadFromFileObj("Assets/teapot.obj");
+	UploadTriMeshVertices();
+
+	// shader
+	LinkShaders("Assets/StandardVertexShader.glsl", "Assets/StandardFragmentShader.glsl");
 }
 
 void cMyApplication::DisplayFunc()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
+	glUseProgram(ShaderProgram);
+	glDrawElements(GL_TRIANGLES, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
 	glutSwapBuffers();
 }
 
