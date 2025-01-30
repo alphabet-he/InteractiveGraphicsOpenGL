@@ -21,13 +21,21 @@ void cMyApplication::CustomInitialization()
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
+
+	glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void cMyApplication::MainLoopFunc()
 {
+	
+	ChangeBackground(10.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	glUseProgram(ShaderProgram);
 
 	glm::mat4 i_modelMat = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1, 0, 0));
+	i_modelMat = glm::translate(i_modelMat, glm::vec3(0.0f, 0.0f, -1.0f));
 	i_modelMat = glm::scale(i_modelMat, glm::vec3(0.1f, 0.1f, 0.1f));
 	glm::mat4 i_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	glm::mat4 i_projectionMat = glm::perspective(
@@ -53,7 +61,6 @@ void cMyApplication::ChangeBackground(double i_deltaTime)
 		else {
 			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
-		glClear(GL_COLOR_BUFFER_BIT);
 
 		m_lastBackgroundChangeTime = glfwGetTime();
 	}

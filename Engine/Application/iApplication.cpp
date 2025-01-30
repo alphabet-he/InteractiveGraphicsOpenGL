@@ -11,6 +11,12 @@ void iApplication::Initialize()
 	// initialize glfw
 	glfwInit();
 
+	// create window
+	m_applicationWindow = glfwCreateWindow(m_windowWidth, m_windowHeight, m_windowTitle.c_str(), nullptr, nullptr);
+	glfwMakeContextCurrent(m_applicationWindow);
+
+	glfwSwapInterval(1);
+
 	// initialize glew
 	glewInit();
 
@@ -20,10 +26,6 @@ void iApplication::Initialize()
 void iApplication::Run()
 {
 	m_running = true;
-
-	// create window
-	m_applicationWindow = glfwCreateWindow(m_windowWidth, m_windowHeight, m_windowTitle.c_str(), nullptr, nullptr);
-	glfwMakeContextCurrent(m_applicationWindow);
 
 	//glfwSetKeyCallback(m_applicationWindow, DisplayFunc);
 
