@@ -6,5 +6,10 @@
       "out\\build\\x64-Release",
       "out\\install\\x64-Release"
     ]
-  }
+  },
+  "ExpandedNodes": [
+    ""
+  ],
+  "SelectedNode": "\\C:\\Users\\u1481419\\Documents\\GitHub\\InteractiveGraphicsOpenGL\\External\\glm\\CMakeLists.txt\\CMakeSettings.json",
+  "PreviewInSolutionExplorer": false
 }

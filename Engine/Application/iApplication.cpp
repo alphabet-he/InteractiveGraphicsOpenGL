@@ -1,44 +1,18 @@
 #include "iApplication.h"
 
-iApplication* iApplication::instance = nullptr;
 
 iApplication::iApplication()
 {
 }
 
-void iApplication::_DisplayFunc()
+void iApplication::Initialize()
 {
-	instance->DisplayFunc();
-}
 
-void iApplication::_IdleFunc()
-{
-	instance->IdleFunc();
-}
-
-void iApplication::_HandleKeyboardFunc(unsigned char key, int x, int y)
-{
-	instance->HandleKeyboardFunc(key, x, y);
-}
-
-void iApplication::Initialize(int argc, char** argv)
-{
-	instance = this;
-
-	// create window
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(m_windowWidth, m_windowHeight);
-	glutInitWindowPosition(100, 100);
-	glutCreateWindow(m_windowTitle.c_str());
+	// initialize glfw
+	glfwInit();
 
 	// initialize glew
 	glewInit();
-
-	// set up functions
-	glutDisplayFunc(_DisplayFunc);
-	glutIdleFunc(_IdleFunc);
-	glutKeyboardFunc(_HandleKeyboardFunc);
 
 	CustomInitialization();
 }
@@ -46,7 +20,18 @@ void iApplication::Initialize(int argc, char** argv)
 void iApplication::Run()
 {
 	m_running = true;
-	glutMainLoop();
+
+	// create window
+	m_applicationWindow = glfwCreateWindow(m_windowWidth, m_windowHeight, m_windowTitle.c_str(), nullptr, nullptr);
+	glfwMakeContextCurrent(m_applicationWindow);
+
+	//glfwSetKeyCallback(m_applicationWindow, DisplayFunc);
+
+	while (!glfwWindowShouldClose(m_applicationWindow)) {
+		MainLoopFunc();
+		glfwPollEvents();
+		glfwSwapBuffers(m_applicationWindow);
+	}
 }
 
 void iApplication::UploadTriMeshVertices()
@@ -98,15 +83,7 @@ void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i
 	glLinkProgram(ShaderProgram);
 }
 
-void iApplication::DisplayFunc()
-{
-}
-
-void iApplication::IdleFunc()
-{
-}
-
-void iApplication::HandleKeyboardFunc(unsigned char key, int x, int y)
+void iApplication::MainLoopFunc()
 {
 }
 
@@ -117,8 +94,7 @@ void iApplication::CustomInitialization()
 void iApplication::ExitApplication()
 {
 	m_running = false;
-	glutLeaveMainLoop();
-	delete this;
+	glfwTerminate();
 }
 
 iApplication::~iApplication()

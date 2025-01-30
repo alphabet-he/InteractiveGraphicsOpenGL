@@ -1,8 +1,8 @@
-# Install script for directory: D:/dev/glm
+# Install script for directory: C:/Users/u1481419/Documents/GitHub/InteractiveGraphicsOpenGL/External/glm
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "D:/dev/glm/out/install/x64-Release")
+  set(CMAKE_INSTALL_PREFIX "C:/Users/u1481419/Documents/GitHub/InteractiveGraphicsOpenGL/External/glm/out/install/x64-Release")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "D:/dev/glm/out/build/x64-Release/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/u1481419/Documents/GitHub/InteractiveGraphicsOpenGL/External/glm/out/build/x64-Release/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

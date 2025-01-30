@@ -7,10 +7,12 @@ public:
 	cMyApplication();
 
 private:
-	void HandleKeyboardFunc(unsigned char key, int x, int y) override;
+	void MainLoopFunc() override;
 	void CustomInitialization() override;
-	void DisplayFunc() override;
 
-	static void ChangeBackground(int value);
+	void ChangeBackground(double i_deltaTime);
+
+private:
+	double m_lastBackgroundChangeTime = 0;
 };
 

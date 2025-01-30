@@ -1,0 +1,376 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-1bb48181467ae39ef7ff.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						27,
+						28,
+						29,
+						30,
+						31,
+						32,
+						33,
+						34,
+						35
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "freeglut",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						27,
+						28,
+						29,
+						30,
+						31,
+						32,
+						33,
+						34,
+						35
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "3dview::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-3dview-Release-fd97f0749bcb5daa1f1c.json",
+					"name" : "3dview",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "3dview_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-3dview_static-Release-5dda8a6ba16733ea6ed3.json",
+					"name" : "3dview_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "CallbackMaker::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CallbackMaker-Release-cdbc628a2ba180210b35.json",
+					"name" : "CallbackMaker",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "CallbackMaker_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CallbackMaker_static-Release-6320a3b4cc1777cbc9bc.json",
+					"name" : "CallbackMaker_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Fractals::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Fractals-Release-a65528ec13d9b6e33ad0.json",
+					"name" : "Fractals",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Fractals_random::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Fractals_random-Release-449f08fe0b7a1ef1a82b.json",
+					"name" : "Fractals_random",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Fractals_random_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Fractals_random_static-Release-a5e3aae799a11fb64a03.json",
+					"name" : "Fractals_random_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Fractals_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Fractals_static-Release-86eb480120563dc2167c.json",
+					"name" : "Fractals_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Lorenz::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Lorenz-Release-2d10a01c602fd289020d.json",
+					"name" : "Lorenz",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Lorenz_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Lorenz_static-Release-75495ce269be0bd48817.json",
+					"name" : "Lorenz_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "One::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-One-Release-b870192765cd548ce780.json",
+					"name" : "One",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "One_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-One_static-Release-53929591fbceed9ccc12.json",
+					"name" : "One_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "freeglut::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-freeglut-Release-fadec7407452d7cf7572.json",
+					"name" : "freeglut",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "freeglut_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-freeglut_static-Release-8863f9405512f94408da.json",
+					"name" : "freeglut_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "indexed_color::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-indexed_color-Release-3dccb03cd983c9ec3ca7.json",
+					"name" : "indexed_color",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "indexed_color_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-indexed_color_static-Release-90d93068e936403c5a77.json",
+					"name" : "indexed_color_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "joystick::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-joystick-Release-0f9ee6a1a108dc5c004c.json",
+					"name" : "joystick",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "joystick_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-joystick_static-Release-00baa327a1488ecbd732.json",
+					"name" : "joystick_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "keyboard::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-keyboard-Release-e293c39a5fb11108f742.json",
+					"name" : "keyboard",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "keyboard_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-keyboard_static-Release-f0954aaedc8c124486ef.json",
+					"name" : "keyboard_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "multi-touch::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-multi-touch-Release-1537500888321022677f.json",
+					"name" : "multi-touch",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "multi-touch_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-multi-touch_static-Release-6764d7d98fa5cdc2db17.json",
+					"name" : "multi-touch_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "resizer::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-resizer-Release-2ee1f43e0c9d8fecdfa5.json",
+					"name" : "resizer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "resizer_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-resizer_static-Release-74038345f54cd3184a84.json",
+					"name" : "resizer_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "shapes::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-shapes-Release-386589d85fc38742b237.json",
+					"name" : "shapes",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "shapes_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-shapes_static-Release-f27bfed6106172423385.json",
+					"name" : "shapes_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "smooth_opengl3::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-smooth_opengl3-Release-8125950399ca4c45421d.json",
+					"name" : "smooth_opengl3",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "smooth_opengl3_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-smooth_opengl3_static-Release-49dbe52d99d001dc82f6.json",
+					"name" : "smooth_opengl3_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "spaceball::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-spaceball-Release-1def00dbc8c159fb65e3.json",
+					"name" : "spaceball",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "spaceball_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-spaceball_static-Release-957c606e9716cb41bf54.json",
+					"name" : "spaceball_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "subwin::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-subwin-Release-8bf726d164cd6cc900e1.json",
+					"name" : "subwin",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "subwin_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-subwin_static-Release-1b1a7d2741ac74f9c2ae.json",
+					"name" : "subwin_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "timer::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-timer-Release-84e8764e5d40c0687b23.json",
+					"name" : "timer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "timer_callback::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-timer_callback-Release-95a86d2d15645a493f03.json",
+					"name" : "timer_callback",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "timer_callback_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-timer_callback_static-Release-ceb9903becff60bb3b61.json",
+					"name" : "timer_callback_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "timer_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-timer_static-Release-48a713f3318fa30f9b1b.json",
+					"name" : "timer_static",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/u1481419/Documents/GitHub/InteractiveGraphicsOpenGL/External/FreeGLUT/out/build/x64-Release",
+		"source" : "C:/Users/u1481419/Documents/GitHub/InteractiveGraphicsOpenGL/External/FreeGLUT"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
