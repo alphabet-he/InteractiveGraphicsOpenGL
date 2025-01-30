@@ -5,3 +5,6 @@
 #include <FreeGLUT/include/GL/freeglut.h>
 #include <CyCode/cyTriMesh.h>
 #include <CyCode/cyGL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>

@@ -94,9 +94,8 @@ void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i
 	i_fragmentShader->CompileFile(i_fragmentShaderFilename, GL_FRAGMENT_SHADER);
 	ShaderProgram = glCreateProgram();
 	glAttachShader(ShaderProgram, i_vertexShader->GetID());
-	glAttachShader(ShaderProgram, i_fragmentShader->GetID());
+	//glAttachShader(ShaderProgram, i_fragmentShader->GetID());
 	glLinkProgram(ShaderProgram);
-
 }
 
 void iApplication::DisplayFunc()

@@ -1,0 +1,10 @@
+{
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "out\\x86-Release",
+      "out\\install\\x86-Release",
+      "out\\build\\x64-Release",
+      "out\\install\\x64-Release"
+    ]
+  }
+}
