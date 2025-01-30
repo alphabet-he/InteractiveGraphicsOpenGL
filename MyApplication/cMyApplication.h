@@ -9,6 +9,7 @@ public:
 private:
 	void MainLoopFunc() override;
 	void CustomInitialization() override;
+	void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) override;
 
 	void ChangeBackground(double i_deltaTime);
 

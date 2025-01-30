@@ -26,9 +26,15 @@ void cMyApplication::CustomInitialization()
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_ESCAPE) {
+		ExitApplication();
+	}
+}
+
 void cMyApplication::MainLoopFunc()
 {
-	
 	ChangeBackground(10.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 

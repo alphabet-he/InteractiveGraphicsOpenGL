@@ -23,6 +23,12 @@ public:
 
 	void Run();
 
+private:
+	static iApplication* instance;
+	static void _KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods);
+	static void _MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+	static void _MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
+
 protected:
 	void UploadTriMeshVertices();
 
@@ -31,4 +37,7 @@ protected:
 	virtual void MainLoopFunc();
 	virtual void CustomInitialization();
 	virtual void ExitApplication();
+	virtual void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	virtual void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+	virtual void MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
 };

@@ -1,5 +1,6 @@
 #include "iApplication.h"
 
+iApplication* iApplication::instance = nullptr;
 
 iApplication::iApplication()
 {
@@ -7,6 +8,7 @@ iApplication::iApplication()
 
 void iApplication::Initialize()
 {
+	instance = this;
 
 	// initialize glfw
 	glfwInit();
@@ -27,7 +29,9 @@ void iApplication::Run()
 {
 	m_running = true;
 
-	//glfwSetKeyCallback(m_applicationWindow, DisplayFunc);
+	glfwSetKeyCallback(m_applicationWindow, _KeyCallBack);
+	glfwSetMouseButtonCallback(m_applicationWindow, _MouseButtonCallback);
+	glfwSetCursorPosCallback(m_applicationWindow, _MoveCursorCallback);
 
 	while (!glfwWindowShouldClose(m_applicationWindow)) {
 		MainLoopFunc();
@@ -45,12 +49,12 @@ void iApplication::UploadTriMeshVertices()
 	std::vector<GLfloat> i_vertices;
 	std::vector<GLuint> i_indices;
 
-	for (int i = 0; i < m_meshToRender->NV(); i++) {
+	for (int i = 0; i < (int)m_meshToRender->NV(); i++) {
 		i_vertices.push_back(m_meshToRender->V(i).x);
 		i_vertices.push_back(m_meshToRender->V(i).y);
 		i_vertices.push_back(m_meshToRender->V(i).z);
 	}
-	for (int i = 0; i < m_meshToRender->NF(); i++) {
+	for (int i = 0; i < (int)m_meshToRender->NF(); i++) {
 		i_indices.push_back(m_meshToRender->F(i).v[0]);
 		i_indices.push_back(m_meshToRender->F(i).v[1]);
 		i_indices.push_back(m_meshToRender->F(i).v[2]);
@@ -96,7 +100,35 @@ void iApplication::CustomInitialization()
 void iApplication::ExitApplication()
 {
 	m_running = false;
+	instance = nullptr;
 	glfwTerminate();
+}
+
+void iApplication::_KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	instance->KeyCallback(window, key, scancode, action, mods);
+}
+
+void iApplication::_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	instance->MouseButtonCallback(window, button, action, mods);
+}
+
+void iApplication::_MoveCursorCallback(GLFWwindow* window, double xpos, double ypos)
+{
+	instance->MoveCursorCallback(window, xpos, ypos);
+}
+
+void iApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+}
+
+void iApplication::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+}
+
+void iApplication::MoveCursorCallback(GLFWwindow* window, double xpos, double ypos)
+{
 }
 
 iApplication::~iApplication()
