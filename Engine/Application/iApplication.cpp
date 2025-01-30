@@ -33,7 +33,7 @@ void iApplication::Run()
 	glfwSetMouseButtonCallback(m_applicationWindow, _MouseButtonCallback);
 	glfwSetCursorPosCallback(m_applicationWindow, _MoveCursorCallback);
 
-	while (!glfwWindowShouldClose(m_applicationWindow)) {
+	while (m_running) {
 		MainLoopFunc();
 		glfwPollEvents();
 		glfwSwapBuffers(m_applicationWindow);
@@ -79,13 +79,36 @@ void iApplication::UploadTriMeshVertices()
 
 void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
 {
+	if (ShaderProgram) {
+
+		// get the number of attached shaders
+		GLint shaderCount = 0;
+		glGetProgramiv(ShaderProgram, GL_ATTACHED_SHADERS, &shaderCount);
+
+		// detach all shaders
+		if (shaderCount > 0) {
+			GLuint* shaders = new GLuint[shaderCount];
+			glGetAttachedShaders(ShaderProgram, shaderCount, nullptr, shaders);
+
+			// Detach and delete each shader
+			for (int i = 0; i < shaderCount; i++) {
+				glDetachShader(ShaderProgram, shaders[i]);
+				glDeleteShader(shaders[i]); // Free GPU memory
+			}
+
+			delete[] shaders; // Free allocated memory
+		}
+
+		glDeleteProgram(ShaderProgram);
+	}
+
 	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
 	i_vertexShader->CompileFile(i_vertexShaderFilename, GL_VERTEX_SHADER);
 	i_fragmentShader->CompileFile(i_fragmentShaderFilename, GL_FRAGMENT_SHADER);
 	ShaderProgram = glCreateProgram();
 	glAttachShader(ShaderProgram, i_vertexShader->GetID());
-	//glAttachShader(ShaderProgram, i_fragmentShader->GetID());
+	glAttachShader(ShaderProgram, i_fragmentShader->GetID());
 	glLinkProgram(ShaderProgram);
 }
 
