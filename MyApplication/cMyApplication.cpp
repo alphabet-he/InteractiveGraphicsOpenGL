@@ -18,7 +18,7 @@ void cMyApplication::CustomInitialization()
 	UploadTriMeshVertices();
 
 	// shader
-	LinkShaders("Assets/StandardVertexShader.glsl", "Assets/StandardFragmentShader.glsl");
+	LinkShaders("Assets/NormalVertexShader.glsl", "Assets/NormalFragmentShader.glsl");
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
@@ -39,6 +39,13 @@ void cMyApplication::CustomInitialization()
 		0.1f, 100.0f  // Near & Far plane
 	);
 	
+	glUseProgram(ShaderProgram);
+
+	GLuint i_model = glGetUniformLocation(ShaderProgram, "model");
+	glUniformMatrix4fv(i_model, 1, GL_FALSE, glm::value_ptr(m_modelMat));
+
+	GLuint i_projection = glGetUniformLocation(ShaderProgram, "projection");
+	glUniformMatrix4fv(i_projection, 1, GL_FALSE, glm::value_ptr(m_projectionMat));
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -116,12 +123,11 @@ void cMyApplication::MainLoopFunc()
 		}
 	}
 
-	glm::mat4 i_mvpMat = m_projectionMat * m_viewMat * m_modelMat;
-	GLuint MVP = glGetUniformLocation(ShaderProgram, "MVP");
-	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(i_mvpMat));
+	GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
+	glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(m_viewMat));
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	glDrawElements(GL_POINTS, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
 	
 }
 

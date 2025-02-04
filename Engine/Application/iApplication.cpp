@@ -45,9 +45,11 @@ void iApplication::UploadTriMeshVertices()
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
+	glGenBuffers(1, &normalVBO);
 
 	std::vector<GLfloat> i_vertices;
 	std::vector<GLuint> i_indices;
+	std::vector<GLfloat> i_normals;
 
 	for (int i = 0; i < (int)m_meshToRender->NV(); i++) {
 		i_vertices.push_back(m_meshToRender->V(i).x);
@@ -58,6 +60,11 @@ void iApplication::UploadTriMeshVertices()
 		i_indices.push_back(m_meshToRender->F(i).v[0]);
 		i_indices.push_back(m_meshToRender->F(i).v[1]);
 		i_indices.push_back(m_meshToRender->F(i).v[2]);
+	}
+	for (int i = 0; i < (int)m_meshToRender->NVN(); i++) {
+		i_normals.push_back(m_meshToRender->VN(i).x);
+		i_normals.push_back(m_meshToRender->VN(i).y);
+		i_normals.push_back(m_meshToRender->VN(i).z);
 	}
 
 	// Bind VAO (always bind VAO first)
@@ -74,6 +81,14 @@ void iApplication::UploadTriMeshVertices()
 	// Now bind and upload index buffer (EBO)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, i_indices.size() * sizeof(GLuint), i_indices.data(), GL_STATIC_DRAW);
+
+	// bind normal buffer and upload normal data
+	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+	glBufferData(GL_ARRAY_BUFFER, i_normals.size() * sizeof(GLfloat), i_normals.data(), GL_STATIC_DRAW);
+	
+	// set up normal vertex buffer attributes
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(1);
 
 }
 

@@ -9,7 +9,7 @@ protected:
 	std::string m_windowTitle;
 	GLuint ShaderProgram;
 	cy::TriMesh* m_meshToRender;
-	GLuint VAO, VBO, EBO;
+	GLuint VAO, VBO, EBO, normalVBO;
 	GLFWwindow* m_applicationWindow;
 
 	bool m_running = false;
