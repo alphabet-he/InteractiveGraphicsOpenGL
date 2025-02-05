@@ -18,13 +18,13 @@ void cMyApplication::CustomInitialization()
 	UploadTriMeshVertices();
 
 	// shader
-	LinkShaders("Assets/NormalVertexShader.glsl", "Assets/NormalFragmentShader.glsl");
+	LinkShaders("Assets/NormalVertexShader.glsl", "Assets/BlinnFragmentShader.glsl");
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
 
 	// set background
-	glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// set mvp matrix
 	float i_centerZ = (m_meshToRender->GetBoundMax().z + m_meshToRender->GetBoundMin().z) * 0.5f;
@@ -46,18 +46,30 @@ void cMyApplication::CustomInitialization()
 
 	GLuint i_projection = glGetUniformLocation(ShaderProgram, "projection");
 	glUniformMatrix4fv(i_projection, 1, GL_FALSE, glm::value_ptr(m_projectionMat));
+
+	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	// exit
-	if (key == GLFW_KEY_ESCAPE) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		ExitApplication();
 	}
 
+	// control
+	if (key == GLFW_KEY_LEFT_CONTROL) {
+		if (action == GLFW_PRESS) {
+			m_input_ctrlKey = true;
+		}
+		else if (action == GLFW_RELEASE){
+			m_input_ctrlKey = false;
+		}
+	}
+
 	// recompile shaders
-	if (key == GLFW_KEY_F6) {
-		LinkShaders("Assets/StandardVertexShader.glsl", "Assets/OrangeFragmentShader.glsl");
+	if (key == GLFW_KEY_F6 && action == GLFW_PRESS) {
+		LinkShaders("Assets/NormalVertexShader.glsl", "Assets/NormalFragmentShader.glsl");
 	}
 }
 
@@ -93,7 +105,6 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 void cMyApplication::MainLoopFunc()
 {
 	ChangeBackground(10.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(ShaderProgram);
 
@@ -102,14 +113,23 @@ void cMyApplication::MainLoopFunc()
 		double i_mousePos_y = INT_MIN;
 		glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
 		if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-			m_viewMat = glm::rotate(
-				m_viewMatWhenPressed, 
-				glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX), 
-				glm::vec3(0, 0.5, 0));
-			m_viewMat = glm::rotate(
-				m_viewMat,
-				glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
-				glm::vec3(0.5, 0, 0));
+			if (m_input_ctrlKey) {
+				glm::mat4 i_rotationMatrix = glm::rotate(
+					glm::mat4(1.0f), 
+					glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX) * 0.1f,
+					glm::vec3(0.0f, 1.0f, 0.0f));
+				m_lightPosition = i_rotationMatrix * glm::vec4(m_lightPosition, 1.0f);
+			}
+			else {
+				m_viewMat = glm::rotate(
+					m_viewMatWhenPressed,
+					glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
+					glm::vec3(0, 0.5, 0));
+				m_viewMat = glm::rotate(
+					m_viewMat,
+					glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
+					glm::vec3(0.5, 0, 0));
+			}
 		}
 	}
 	else if (m_input_rightMouseButton) {
@@ -126,7 +146,16 @@ void cMyApplication::MainLoopFunc()
 	GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
 	glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(m_viewMat));
 
-	glEnable(GL_PROGRAM_POINT_SIZE);
+	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
+	glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
+	GLuint i_camera = glGetUniformLocation(ShaderProgram, "camera_position");
+	glUniform3f(i_camera, i_cameraPos.x, i_cameraPos.y, i_cameraPos.z);
+
+	GLuint i_light = glGetUniformLocation(ShaderProgram, "light_position");
+	glUniform3f(i_light, m_lightPosition.x, m_lightPosition.y, m_lightPosition.z);
+
+	glEnable(GL_CULL_FACE);
+
 	glDrawElements(GL_TRIANGLES, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
 	
 }
@@ -136,11 +165,11 @@ void cMyApplication::ChangeBackground(double i_deltaTime)
 	if (glfwGetTime() - m_lastBackgroundChangeTime > i_deltaTime) {
 		GLfloat i_currentColor[4];
 		glGetFloatv(GL_COLOR_CLEAR_VALUE, i_currentColor);
-		if (i_currentColor[0] == 1.0f) {
-			glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+		if (i_currentColor[0] == 0.0f) {
+			glClearColor(0.1f, 0.0f, 0.2f, 1.0f);
 		}
 		else {
-			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		}
 
 		m_lastBackgroundChangeTime = glfwGetTime();

@@ -7,11 +7,14 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 FragNormal;
+out vec3 vertex_normal_out;
+out vec3 vertex_position_out;
 
 void main(){
 	mat3 normalMatrix = transpose(inverse(mat3(model))); 
-	FragNormal = normalize(normalMatrix * vertex_normal);
+	vertex_normal_out = normalize(normalMatrix * vertex_normal);
+
+	vertex_position_out = vec3(model * vec4(vertex_pos, 1.0));
 
 	gl_Position = projection * view * model * vec4(vertex_pos, 1.0);
 	gl_PointSize = 1.6;

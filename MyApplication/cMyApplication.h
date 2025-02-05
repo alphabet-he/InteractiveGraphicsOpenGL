@@ -19,6 +19,7 @@ private:
 
 	bool m_input_leftMouseButton = false;
 	bool m_input_rightMouseButton = false;
+	bool m_input_ctrlKey = false;
 	double m_input_mouseLocationWhenPressedX = INT_MIN;
 	double m_input_mouseLocationWhenPressedY = INT_MIN;
 	glm::mat4 m_viewMatWhenPressed;
@@ -26,5 +27,7 @@ private:
 	glm::mat4 m_modelMat;
 	glm::mat4 m_viewMat;
 	glm::mat4 m_projectionMat;
+
+	glm::vec3 m_lightPosition;
 };
 

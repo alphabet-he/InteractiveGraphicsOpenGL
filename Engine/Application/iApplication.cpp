@@ -33,7 +33,11 @@ void iApplication::Run()
 	glfwSetMouseButtonCallback(m_applicationWindow, _MouseButtonCallback);
 	glfwSetCursorPosCallback(m_applicationWindow, _MoveCursorCallback);
 
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
 	while (m_running) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		MainLoopFunc();
 		glfwPollEvents();
 		glfwSwapBuffers(m_applicationWindow);
