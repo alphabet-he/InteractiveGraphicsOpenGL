@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\External\LoadPNG\lodepng.cpp" />
     <ClCompile Include="iApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\External\LoadPNG\lodepng.h" />
     <ClInclude Include="iApplication.h" />
     <ClInclude Include="Include.h" />
   </ItemGroup>

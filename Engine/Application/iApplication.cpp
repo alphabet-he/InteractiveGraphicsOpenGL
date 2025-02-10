@@ -44,8 +44,10 @@ void iApplication::Run()
 	}
 }
 
-void iApplication::UploadTriMeshVertices()
+void iApplication::UploadTriMesh(char const* i_meshPath)
 {
+	m_meshToRender->LoadFromFileObj(i_meshPath);
+
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -94,6 +96,50 @@ void iApplication::UploadTriMeshVertices()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	glEnableVertexAttribArray(1);
 
+
+	// generate vbo for UV coordinates
+	glGenBuffers(1, &uvVBO);
+
+	// upload uv coordinate data
+	std::vector<GLfloat> i_uvCoordinate;
+	for (int i = 0; i < m_meshToRender->NF(); i++) {
+		for (int j = 0; j < 3; j++) {
+			unsigned int i_uvInd = m_meshToRender->FT(i).v[j];
+
+			i_uvCoordinate.push_back(m_meshToRender->VT(i_uvInd).x);
+			i_uvCoordinate.push_back(1.0 - m_meshToRender->VT(i_uvInd).y);
+		}
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, uvVBO);
+	glBufferData(GL_ARRAY_BUFFER, i_uvCoordinate.size() * sizeof(GLfloat), i_uvCoordinate.data(), GL_STATIC_DRAW);
+
+	// set up uv coordinate array attributes
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(2);
+
+	// get and decode texture png
+	size_t i_lastSlash = std::string(i_meshPath).find_last_of("/\\");
+	std::string directory = (i_lastSlash == std::string::npos) ? "" : std::string(i_meshPath).substr(0, i_lastSlash + 1);
+
+	char* i_textureDiffuseFileName = m_meshToRender->M(0).map_Kd.data; // get from mtl
+	std::string i_textureDiffuse = directory + std::string(i_textureDiffuseFileName);
+	std::vector<unsigned char> image;
+	unsigned width, height;
+	unsigned error = lodepng::decode(image, width, height, i_textureDiffuse); // use loadpng to decode it
+	if (error) {
+		std::cout << "LodePNG decode error " << error << ": " << lodepng_error_text(error) << std::endl;
+	}
+
+	// upload the texture to OpenGL
+	glGenTextures(1, &diffuseTex);
+	glBindTexture(GL_TEXTURE_2D, diffuseTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+	// set paramaters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)

@@ -2,6 +2,8 @@
 
 in vec3 vertex_normal_out;
 in vec3 vertex_position_out;
+in vec2 uv_coordinate_out;
+
 out vec4 frag_color;
 
 uniform vec3 light_position;
@@ -15,6 +17,8 @@ uniform float k_diffuse = 1.0;
 uniform float k_specular = 0.5; 
 uniform float shininess = 32.0;
 
+uniform sampler2D texture_diffuse;
+
 void main(){
 	vec3 L = normalize(light_position - vertex_position_out); // light direction
 	vec3 V = normalize(camera_position - vertex_position_out); // view direction
@@ -23,6 +27,8 @@ void main(){
 	vec3 ambient = k_ambient * light_color;
 	vec3 diffuse = k_diffuse * light_color * max(0, dot(vertex_normal_out, L));
 	vec3 specular = k_specular * light_color * pow(max(0, dot(vertex_normal_out, H)), shininess);
+
+	vec3 object_color = texture(texture_diffuse, uv_coordinate_out).rgb;
 
 	vec3 final_color = (ambient + diffuse + specular) * object_color;
 	frag_color = vec4(final_color, 1.0);

@@ -13,12 +13,11 @@ void cMyApplication::CustomInitialization()
 {
 	// mesh
 	m_meshToRender = new cy::TriMesh();
-	m_meshToRender->LoadFromFileObj("Assets/teapot.obj");
+	UploadTriMesh("Assets/teapot/teapot.obj");
 	m_meshToRender->ComputeBoundingBox();
-	UploadTriMeshVertices();
 
 	// shader
-	LinkShaders("Assets/NormalVertexShader.glsl", "Assets/BlinnFragmentShader.glsl");
+	LinkShaders("Assets/TextureVertexShader.glsl", "Assets/TextureFragmentShader.glsl");
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
@@ -154,8 +153,11 @@ void cMyApplication::MainLoopFunc()
 	GLuint i_light = glGetUniformLocation(ShaderProgram, "light_position");
 	glUniform3f(i_light, m_lightPosition.x, m_lightPosition.y, m_lightPosition.z);
 
-	glEnable(GL_CULL_FACE);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuseTex);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "texture_diffuse"), 0);
 
+	glEnable(GL_CULL_FACE);
 	glDrawElements(GL_TRIANGLES, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
 	
 }

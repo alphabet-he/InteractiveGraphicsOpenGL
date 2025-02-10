@@ -9,7 +9,10 @@ protected:
 	std::string m_windowTitle;
 	GLuint ShaderProgram;
 	cy::TriMesh* m_meshToRender;
-	GLuint VAO, VBO, EBO, normalVBO;
+	// basic mesh
+	GLuint VAO, VBO, EBO;
+	// render (textures)
+	GLuint normalVBO, uvVBO, diffuseTex;
 	GLFWwindow* m_applicationWindow;
 
 	bool m_running = false;
@@ -30,7 +33,7 @@ private:
 	static void _MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
 
 protected:
-	void UploadTriMeshVertices();
+	void UploadTriMesh(char const* i_meshPath);
 
 	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 
