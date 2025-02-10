@@ -10,9 +10,9 @@ protected:
 	GLuint ShaderProgram;
 	cy::TriMesh* m_meshToRender;
 	// basic mesh
-	GLuint VAO, VBO, EBO;
-	// render (textures)
-	GLuint normalVBO, uvVBO, diffuseTex;
+	GLuint VAO, VBO;
+	// textures
+	GLuint diffuseTex, specularTex;
 	GLFWwindow* m_applicationWindow;
 
 	bool m_running = false;

@@ -157,8 +157,12 @@ void cMyApplication::MainLoopFunc()
 	glBindTexture(GL_TEXTURE_2D, diffuseTex);
 	glUniform1i(glGetUniformLocation(ShaderProgram, "texture_diffuse"), 0);
 
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specularTex);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "texture_specular"), 1);
+
 	glEnable(GL_CULL_FACE);
-	glDrawElements(GL_TRIANGLES, m_meshToRender->NF() * 3, GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
 	
 }
 

@@ -50,27 +50,26 @@ void iApplication::UploadTriMesh(char const* i_meshPath)
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	glGenBuffers(1, &normalVBO);
 
 	std::vector<GLfloat> i_vertices;
-	std::vector<GLuint> i_indices;
-	std::vector<GLfloat> i_normals;
 
-	for (int i = 0; i < (int)m_meshToRender->NV(); i++) {
-		i_vertices.push_back(m_meshToRender->V(i).x);
-		i_vertices.push_back(m_meshToRender->V(i).y);
-		i_vertices.push_back(m_meshToRender->V(i).z);
-	}
 	for (int i = 0; i < (int)m_meshToRender->NF(); i++) {
-		i_indices.push_back(m_meshToRender->F(i).v[0]);
-		i_indices.push_back(m_meshToRender->F(i).v[1]);
-		i_indices.push_back(m_meshToRender->F(i).v[2]);
-	}
-	for (int i = 0; i < (int)m_meshToRender->NVN(); i++) {
-		i_normals.push_back(m_meshToRender->VN(i).x);
-		i_normals.push_back(m_meshToRender->VN(i).y);
-		i_normals.push_back(m_meshToRender->VN(i).z);
+		for (int j = 0; j < 3; j++) {
+			unsigned int i_vertexInd = m_meshToRender->F(i).v[j];
+			unsigned int i_normalInd = m_meshToRender->FN(i).v[j];
+			unsigned int i_uvInd = m_meshToRender->FT(i).v[j];
+
+			i_vertices.push_back(m_meshToRender->V(i_vertexInd).x);
+			i_vertices.push_back(m_meshToRender->V(i_vertexInd).y);
+			i_vertices.push_back(m_meshToRender->V(i_vertexInd).z);
+
+			i_vertices.push_back(m_meshToRender->VN(i_normalInd).x);
+			i_vertices.push_back(m_meshToRender->VN(i_normalInd).y);
+			i_vertices.push_back(m_meshToRender->VN(i_normalInd).z);
+
+			i_vertices.push_back(m_meshToRender->VT(i_uvInd).x);
+			i_vertices.push_back(1.0f - m_meshToRender->VT(i_uvInd).y);
+		}
 	}
 
 	// Bind VAO (always bind VAO first)
@@ -80,47 +79,23 @@ void iApplication::UploadTriMesh(char const* i_meshPath)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, i_vertices.size() * sizeof(GLfloat), i_vertices.data(), GL_STATIC_DRAW);
 
-	// Set up vertex attributes *before* binding EBO
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+	// Set attributes for position data
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// Now bind and upload index buffer (EBO)
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, i_indices.size() * sizeof(GLuint), i_indices.data(), GL_STATIC_DRAW);
-
-	// bind normal buffer and upload normal data
-	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
-	glBufferData(GL_ARRAY_BUFFER, i_normals.size() * sizeof(GLfloat), i_normals.data(), GL_STATIC_DRAW);
-	
-	// set up normal vertex buffer attributes
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	// Set attributes for normal data
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
-
-	// generate vbo for UV coordinates
-	glGenBuffers(1, &uvVBO);
-
-	// upload uv coordinate data
-	std::vector<GLfloat> i_uvCoordinate;
-	for (int i = 0; i < m_meshToRender->NF(); i++) {
-		for (int j = 0; j < 3; j++) {
-			unsigned int i_uvInd = m_meshToRender->FT(i).v[j];
-
-			i_uvCoordinate.push_back(m_meshToRender->VT(i_uvInd).x);
-			i_uvCoordinate.push_back(1.0 - m_meshToRender->VT(i_uvInd).y);
-		}
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, uvVBO);
-	glBufferData(GL_ARRAY_BUFFER, i_uvCoordinate.size() * sizeof(GLfloat), i_uvCoordinate.data(), GL_STATIC_DRAW);
-
-	// set up uv coordinate array attributes
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	// Set attributes for uv coordinate data
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 
 	// get and decode texture png
 	size_t i_lastSlash = std::string(i_meshPath).find_last_of("/\\");
 	std::string directory = (i_lastSlash == std::string::npos) ? "" : std::string(i_meshPath).substr(0, i_lastSlash + 1);
 
+	// diffuse texture
 	char* i_textureDiffuseFileName = m_meshToRender->M(0).map_Kd.data; // get from mtl
 	std::string i_textureDiffuse = directory + std::string(i_textureDiffuseFileName);
 	std::vector<unsigned char> image;
@@ -133,6 +108,25 @@ void iApplication::UploadTriMesh(char const* i_meshPath)
 	// upload the texture to OpenGL
 	glGenTextures(1, &diffuseTex);
 	glBindTexture(GL_TEXTURE_2D, diffuseTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+	// set paramaters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// specular texture
+	char* i_textureSpecularFileName = m_meshToRender->M(0).map_Ks.data; // get from mtl
+	std::string i_textureSpecular = directory + std::string(i_textureSpecularFileName);
+	error = lodepng::decode(image, width, height, i_textureSpecular); // use loadpng to decode it
+	if (error) {
+		std::cout << "LodePNG decode error " << error << ": " << lodepng_error_text(error) << std::endl;
+	}
+
+	// upload the texture to OpenGL
+	glGenTextures(1, &specularTex);
+	glBindTexture(GL_TEXTURE_2D, specularTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
 
 	// set paramaters

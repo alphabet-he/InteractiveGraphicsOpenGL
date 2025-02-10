@@ -14,10 +14,11 @@ uniform vec3 object_color = vec3(0.8, 0.0, 0.0);
 
 uniform float k_ambient = 0.1;
 uniform float k_diffuse = 1.0;
-uniform float k_specular = 0.5; 
+//uniform float k_specular = 0.5; 
 uniform float shininess = 32.0;
 
 uniform sampler2D texture_diffuse;
+uniform sampler2D texture_specular;
 
 void main(){
 	vec3 L = normalize(light_position - vertex_position_out); // light direction
@@ -26,6 +27,7 @@ void main(){
 
 	vec3 ambient = k_ambient * light_color;
 	vec3 diffuse = k_diffuse * light_color * max(0, dot(vertex_normal_out, L));
+	vec3 k_specular = texture(texture_specular, uv_coordinate_out).rgb;
 	vec3 specular = k_specular * light_color * pow(max(0, dot(vertex_normal_out, H)), shininess);
 
 	vec3 object_color = texture(texture_diffuse, uv_coordinate_out).rgb;
