@@ -47,6 +47,9 @@ void cMyApplication::CustomInitialization()
 	glUniformMatrix4fv(i_projection, 1, GL_FALSE, glm::value_ptr(m_projectionMat));
 
 	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+
+	// render to texture
+	InitRenderToTexture();
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -103,7 +106,12 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::MainLoopFunc()
 {
-	ChangeBackground(10.0f);
+	//ChangeBackground(10.0f);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glViewport(0, 0, m_windowWidth, m_windowHeight);
 
 	glUseProgram(ShaderProgram);
 
@@ -163,6 +171,8 @@ void cMyApplication::MainLoopFunc()
 
 	glEnable(GL_CULL_FACE);
 	glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 }
 

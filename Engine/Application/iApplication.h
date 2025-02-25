@@ -13,6 +13,11 @@ protected:
 	GLuint VAO, VBO;
 	// textures
 	GLuint diffuseTex, specularTex;
+	// render to texture
+	GLuint FBO, RBO, renderToTex;
+	GLuint RenderToTextureShaderProgram;
+	cy::TriMesh* renderToTexturePlane;
+
 	GLFWwindow* m_applicationWindow;
 
 	bool m_running = false;
@@ -36,6 +41,8 @@ protected:
 	void UploadTriMesh(char const* i_meshPath);
 
 	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
+
+	void InitRenderToTexture();
 
 	virtual void MainLoopFunc();
 	virtual void CustomInitialization();

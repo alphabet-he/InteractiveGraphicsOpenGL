@@ -37,7 +37,6 @@ void iApplication::Run()
 	glDepthFunc(GL_LEQUAL);
 
 	while (m_running) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		MainLoopFunc();
 		glfwPollEvents();
 		glfwSwapBuffers(m_applicationWindow);
@@ -169,6 +168,33 @@ void iApplication::LinkShaders(char const* i_vertexShaderFilename, char const* i
 	glAttachShader(ShaderProgram, i_vertexShader->GetID());
 	glAttachShader(ShaderProgram, i_fragmentShader->GetID());
 	glLinkProgram(ShaderProgram);
+}
+
+void iApplication::InitRenderToTexture()
+{
+	// frame buffer object
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	
+	glGenTextures(1, &renderToTex);
+	glBindTexture(GL_TEXTURE_2D, renderToTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_windowWidth, m_windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderToTex, 0);
+
+	// render buffer object
+	glGenRenderbuffers(1, &RBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_windowWidth, m_windowHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+	// unbind framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void iApplication::MainLoopFunc()
