@@ -11,6 +11,6 @@ void main() {
     if (texColor.a == 0.0) { // If the texture is empty, show magenta
         FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     } else {
-        FragColor = texColor; // Otherwise, show the texture
+        FragColor = texColor + vec4(0.02, 0.02, 0.02, 0.0);; // Otherwise, show the texture
     }
 }

@@ -29,7 +29,5 @@ private:
 	glm::mat4 m_projectionMat;
 
 	glm::vec3 m_lightPosition;
-
-	glm::mat4 m_initialMvpMat;
 };
 

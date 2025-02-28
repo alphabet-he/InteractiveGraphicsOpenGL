@@ -37,8 +37,6 @@ void cMyApplication::CustomInitialization()
 		(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
 		0.1f, 100.0f  // Near & Far plane
 	);
-
-	m_initialMvpMat = m_projectionMat * m_viewMat;
 	
 	glUseProgram(ShaderProgram);
 
@@ -52,6 +50,12 @@ void cMyApplication::CustomInitialization()
 
 	// render to texture
 	InitRenderToTexture();
+
+	glUseProgram(RenderToTextureShaderProgram);
+
+	glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(m_projectionMat));
+	glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -119,6 +123,7 @@ void cMyApplication::MainLoopFunc()
 		glUseProgram(ShaderProgram);
 
 		// input
+		/*
 		{
 			if (m_input_leftMouseButton) {
 				double i_mousePos_x = INT_MIN;
@@ -155,9 +160,10 @@ void cMyApplication::MainLoopFunc()
 				}
 			}
 		}
+		*/
 
 		GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
-		glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(m_viewMat));
+		glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0))));
 
 		glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
 		glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
@@ -191,8 +197,35 @@ void cMyApplication::MainLoopFunc()
 		glBindTexture(GL_TEXTURE_2D, renderToTex);
 		glUniform1i(glGetUniformLocation(RenderToTextureShaderProgram, "screenTexture"), 0);
 
-		GLuint i_mvp = glGetUniformLocation(RenderToTextureShaderProgram, "mvp");
-		glUniformMatrix4fv(i_mvp, 1, GL_FALSE, glm::value_ptr(m_initialMvpMat));
+		{
+			if (m_input_leftMouseButton) {
+				double i_mousePos_x = INT_MIN;
+				double i_mousePos_y = INT_MIN;
+				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+					m_viewMat = glm::rotate(
+						m_viewMatWhenPressed,
+						glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
+						glm::vec3(0, 0.5, 0));
+					m_viewMat = glm::rotate(
+						m_viewMat,
+						glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
+						glm::vec3(0.5, 0, 0));
+				}
+			}
+			else if (m_input_rightMouseButton) {
+				double i_mousePos_x = INT_MIN;
+				double i_mousePos_y = INT_MIN;
+				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+					m_viewMat = glm::translate(
+						m_viewMatWhenPressed,
+						glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
+				}
+			}
+		}
+
+		glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(m_viewMat));
 
 		glBindVertexArray(RenderToTextureVAO);
 		glDrawArrays(GL_TRIANGLES, 0, renderToTexturePlane->NF() * 3);
