@@ -195,6 +195,7 @@ void cMyApplication::MainLoopFunc()
 		glUseProgram(RenderToTextureShaderProgram);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, renderToTex);
+		glGenerateMipmap(GL_TEXTURE_2D);
 		glUniform1i(glGetUniformLocation(RenderToTextureShaderProgram, "screenTexture"), 0);
 
 		{
