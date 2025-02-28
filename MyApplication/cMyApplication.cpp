@@ -37,6 +37,8 @@ void cMyApplication::CustomInitialization()
 		(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
 		0.1f, 100.0f  // Near & Far plane
 	);
+
+	m_initialMvpMat = m_projectionMat * m_viewMat;
 	
 	glUseProgram(ShaderProgram);
 
@@ -106,73 +108,95 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::MainLoopFunc()
 {
-	//ChangeBackground(10.0f);
+	//ChangeBackground(1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// render to frame buffer
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, m_windowWidth, m_windowHeight);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-	glViewport(0, 0, m_windowWidth, m_windowHeight);
+		glUseProgram(ShaderProgram);
 
-	glUseProgram(ShaderProgram);
-
-	if (m_input_leftMouseButton) {
-		double i_mousePos_x = INT_MIN;
-		double i_mousePos_y = INT_MIN;
-		glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-		if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-			if (m_input_ctrlKey) {
-				glm::mat4 i_rotationMatrix = glm::rotate(
-					glm::mat4(1.0f), 
-					glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX) * 0.1f,
-					glm::vec3(0.0f, 1.0f, 0.0f));
-				m_lightPosition = i_rotationMatrix * glm::vec4(m_lightPosition, 1.0f);
+		// input
+		{
+			if (m_input_leftMouseButton) {
+				double i_mousePos_x = INT_MIN;
+				double i_mousePos_y = INT_MIN;
+				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+					if (m_input_ctrlKey) {
+						glm::mat4 i_rotationMatrix = glm::rotate(
+							glm::mat4(1.0f),
+							glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX) * 0.1f,
+							glm::vec3(0.0f, 1.0f, 0.0f));
+						m_lightPosition = i_rotationMatrix * glm::vec4(m_lightPosition, 1.0f);
+					}
+					else {
+						m_viewMat = glm::rotate(
+							m_viewMatWhenPressed,
+							glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
+							glm::vec3(0, 0.5, 0));
+						m_viewMat = glm::rotate(
+							m_viewMat,
+							glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
+							glm::vec3(0.5, 0, 0));
+					}
+				}
 			}
-			else {
-				m_viewMat = glm::rotate(
-					m_viewMatWhenPressed,
-					glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
-					glm::vec3(0, 0.5, 0));
-				m_viewMat = glm::rotate(
-					m_viewMat,
-					glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
-					glm::vec3(0.5, 0, 0));
+			else if (m_input_rightMouseButton) {
+				double i_mousePos_x = INT_MIN;
+				double i_mousePos_y = INT_MIN;
+				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+					m_viewMat = glm::translate(
+						m_viewMatWhenPressed,
+						glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
+				}
 			}
 		}
+
+		GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
+		glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(m_viewMat));
+
+		glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
+		glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
+		GLuint i_camera = glGetUniformLocation(ShaderProgram, "camera_position");
+		glUniform3f(i_camera, i_cameraPos.x, i_cameraPos.y, i_cameraPos.z);
+
+		GLuint i_light = glGetUniformLocation(ShaderProgram, "light_position");
+		glUniform3f(i_light, m_lightPosition.x, m_lightPosition.y, m_lightPosition.z);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseTex);
+		glUniform1i(glGetUniformLocation(ShaderProgram, "texture_diffuse"), 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularTex);
+		glUniform1i(glGetUniformLocation(ShaderProgram, "texture_specular"), 1);
+
+		glEnable(GL_CULL_FACE);
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
-	else if (m_input_rightMouseButton) {
-		double i_mousePos_x = INT_MIN;
-		double i_mousePos_y = INT_MIN;
-		glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-		if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-			m_viewMat = glm::translate(
-				m_viewMatWhenPressed,
-				glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
-		}
+
+	// render to texture on the plane
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, m_windowWidth, m_windowHeight);
+		glUseProgram(RenderToTextureShaderProgram);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderToTex);
+		glUniform1i(glGetUniformLocation(RenderToTextureShaderProgram, "screenTexture"), 0);
+
+		GLuint i_mvp = glGetUniformLocation(RenderToTextureShaderProgram, "mvp");
+		glUniformMatrix4fv(i_mvp, 1, GL_FALSE, glm::value_ptr(m_initialMvpMat));
+
+		glBindVertexArray(RenderToTextureVAO);
+		glDrawArrays(GL_TRIANGLES, 0, renderToTexturePlane->NF() * 3);
 	}
-
-	GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
-	glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(m_viewMat));
-
-	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
-	glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
-	GLuint i_camera = glGetUniformLocation(ShaderProgram, "camera_position");
-	glUniform3f(i_camera, i_cameraPos.x, i_cameraPos.y, i_cameraPos.z);
-
-	GLuint i_light = glGetUniformLocation(ShaderProgram, "light_position");
-	glUniform3f(i_light, m_lightPosition.x, m_lightPosition.y, m_lightPosition.z);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuseTex);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "texture_diffuse"), 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specularTex);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "texture_specular"), 1);
-
-	glEnable(GL_CULL_FACE);
-	glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 }
 

@@ -15,6 +15,7 @@ protected:
 	GLuint diffuseTex, specularTex;
 	// render to texture
 	GLuint FBO, RBO, renderToTex;
+	GLuint RenderToTextureVAO, RenerToTextureVBO;
 	GLuint RenderToTextureShaderProgram;
 	cy::TriMesh* renderToTexturePlane;
 
