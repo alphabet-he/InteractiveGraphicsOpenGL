@@ -48,14 +48,6 @@ void cMyApplication::CustomInitialization()
 
 	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
-	// render to texture
-	InitRenderToTexture();
-
-	glUseProgram(RenderToTextureShaderProgram);
-
-	glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(m_projectionMat));
-	glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -114,7 +106,7 @@ void cMyApplication::MainLoopFunc()
 {
 	//ChangeBackground(1.0f);
 
-	// render to frame buffer
+	
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -123,7 +115,6 @@ void cMyApplication::MainLoopFunc()
 		glUseProgram(ShaderProgram);
 
 		// input
-		/*
 		{
 			if (m_input_leftMouseButton) {
 				double i_mousePos_x = INT_MIN;
@@ -160,7 +151,7 @@ void cMyApplication::MainLoopFunc()
 				}
 			}
 		}
-		*/
+		
 
 		GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
 		glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0))));
@@ -186,50 +177,6 @@ void cMyApplication::MainLoopFunc()
 		glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
-	// render to texture on the plane
-	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, m_windowWidth, m_windowHeight);
-		glUseProgram(RenderToTextureShaderProgram);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, renderToTex);
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glUniform1i(glGetUniformLocation(RenderToTextureShaderProgram, "screenTexture"), 0);
-
-		{
-			if (m_input_leftMouseButton) {
-				double i_mousePos_x = INT_MIN;
-				double i_mousePos_y = INT_MIN;
-				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-					m_viewMat = glm::rotate(
-						m_viewMatWhenPressed,
-						glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
-						glm::vec3(0, 0.5, 0));
-					m_viewMat = glm::rotate(
-						m_viewMat,
-						glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
-						glm::vec3(0.5, 0, 0));
-				}
-			}
-			else if (m_input_rightMouseButton) {
-				double i_mousePos_x = INT_MIN;
-				double i_mousePos_y = INT_MIN;
-				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-					m_viewMat = glm::translate(
-						m_viewMatWhenPressed,
-						glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
-				}
-			}
-		}
-
-		glUniformMatrix4fv(glGetUniformLocation(RenderToTextureShaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(m_viewMat));
-
-		glBindVertexArray(RenderToTextureVAO);
-		glDrawArrays(GL_TRIANGLES, 0, renderToTexturePlane->NF() * 3);
 	}
 	
 }

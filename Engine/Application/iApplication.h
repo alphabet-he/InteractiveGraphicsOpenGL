@@ -7,12 +7,8 @@ protected:
 	uint16_t m_windowHeight;
 	uint16_t m_windowWidth;
 	std::string m_windowTitle;
-	GLuint ShaderProgram;
-	cy::TriMesh* m_meshToRender;
-	// basic mesh
-	GLuint VAO, VBO;
-	// textures
-	GLuint diffuseTex, specularTex;
+
+
 	// render to texture
 	GLuint FBO, RBO, renderToTex;
 	GLuint RenderToTextureVAO, RenerToTextureVBO;
@@ -39,9 +35,6 @@ private:
 	static void _MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
 
 protected:
-	void UploadTriMesh(char const* i_meshPath);
-
-	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 
 	void InitRenderToTexture();
 
