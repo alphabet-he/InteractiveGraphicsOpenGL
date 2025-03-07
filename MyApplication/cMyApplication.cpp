@@ -15,10 +15,10 @@ void cMyApplication::CustomInitialization()
 	m_backgroundProgram = new cEnvironmentShaderProgram();
 
 	// display vertex buffer
-	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true);
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, false);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, true, true));
-	m_displayProgram->LinkShaders("Assets/TextureVertexShader.glsl", "Assets/TextureFragmentShader.glsl");
+	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
+	m_displayProgram->LinkShaders("Assets/ReflectionVertexShader.glsl", "Assets/ReflectionFragmentShader.glsl");
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
@@ -58,7 +58,9 @@ void cMyApplication::CustomInitialization()
 
 	m_backgroundProgram->UploadEnvironmentTexture(i_fileNames);
 
-	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+	i_teapotMesh->UploadSkyboxReflectionTexture(m_backgroundProgram->GetEnvTexInt());
+
+	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
 
 }
 

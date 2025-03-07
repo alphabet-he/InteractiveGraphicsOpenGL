@@ -41,6 +41,11 @@ void cMesh::UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textu
 	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
 }
 
+void cMesh::UploadSkyboxReflectionTexture(GLuint i_skybox)
+{
+	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_skybox, SKYBOX_REFLECTION));
+}
+
 cVertexShaderProgram::cVertexShaderProgram()
 {
 	//TODO: Abstract an actual parent class
@@ -220,6 +225,7 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	m_textureKa = glGetUniformLocation(m_shaderProgram, "texture_Ka");
 	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
 	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
+	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
 
 	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
 	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
@@ -273,17 +279,22 @@ void cVertexShaderProgram::DrawCall()
 		for (const auto& i_texBinding : i_mesh->m_textureBinding) {
 
 			glActiveTexture(GL_TEXTURE0 + i_textureUnit);
-			glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-
 			switch (i_texBinding.second) {
 			case AMBIENT:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
 				glUniform1i(m_textureKa, i_textureUnit);
 				break;
 			case DIFFUSE:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
 				glUniform1i(m_textureKd, i_textureUnit);
 				break;
 			case SPECULAR:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
 				glUniform1i(m_textureKs, i_textureUnit);
+				break;
+			case SKYBOX_REFLECTION:
+				glBindTexture(GL_TEXTURE_CUBE_MAP, i_texBinding.first);
+				glUniform1i(m_textureSkyboxReflection, i_textureUnit);
 				break;
 			}
 

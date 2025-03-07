@@ -5,7 +5,8 @@
 enum eTextureUsageFlags {
 	AMBIENT = 1 << 0, // 0001
 	DIFFUSE = 1 << 1, // 0010
-	SPECULAR = 1 << 2  // 0100
+	SPECULAR = 1 << 2,  // 0100
+	SKYBOX_REFLECTION = 1 << 3 // 1000
 };
 
 struct sTextureUsage {
@@ -45,6 +46,7 @@ public:
 		m_textureBinding.clear();
 	}
 	void UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
+	void UploadSkyboxReflectionTexture(GLuint i_skybox);
 };
 
 // Bitmask Flags for Attributes
@@ -95,7 +97,7 @@ private:
 	size_t m_VBOoffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs;
+	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
@@ -129,6 +131,8 @@ public:
 	bool UploadEnvironmentTexture(std::vector<std::string> i_fileNames);
 
 	void DrawCall() override;
+
+	inline GLuint GetEnvTexInt() { return m_environmentTexture; };
 };
 
 
