@@ -16,7 +16,7 @@ private:
 	void ChangeBackground(double i_deltaTime);
 
 private:
-	cVertexShaderProgram* m_backgroundProgram;
+	cEnvironmentShaderProgram* m_backgroundProgram;
 	cVertexShaderProgram* m_displayProgram;
 
 	double m_lastBackgroundChangeTime = 0;

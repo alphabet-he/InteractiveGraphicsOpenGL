@@ -41,6 +41,11 @@ void cMesh::UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textu
 	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
 }
 
+cVertexShaderProgram::cVertexShaderProgram()
+{
+	//TODO: Abstract an actual parent class
+}
+
 cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferStruct)
 {
 	m_vertexBufferStruct = i_vertexBufferStruct;
@@ -259,7 +264,6 @@ void cVertexShaderProgram::SetLightingPosition(glm::vec3 i_lightPos)
 void cVertexShaderProgram::DrawCall()
 {
 	glUseProgram(m_shaderProgram);
-	glEnable(GL_CULL_FACE);
 	glBindVertexArray(m_VAO);
 
 	for (cMesh* i_mesh : m_meshes) {
@@ -271,7 +275,6 @@ void cVertexShaderProgram::DrawCall()
 			glActiveTexture(GL_TEXTURE0 + i_textureUnit);
 			glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
 
-			const char* i_uniformName;
 			switch (i_texBinding.second) {
 			case AMBIENT:
 				glUniform1i(m_textureKa, i_textureUnit);
@@ -298,10 +301,13 @@ cEnvironmentShaderProgram::cEnvironmentShaderProgram()
 
 	std::vector<GLfloat> i_vertices;
 
-	for (int i = 0; i < (int)m_environmentCube->NV(); i++) {
-		i_vertices.push_back(m_environmentCube->V(i).x);
-		i_vertices.push_back(m_environmentCube->V(i).y);
-		i_vertices.push_back(m_environmentCube->V(i).z);
+	for (int i = 0; i < (int)m_environmentCube->NF(); i++) {
+		for (int j = 0; j < 3; j++) {
+			unsigned int i_vertexInd = m_environmentCube->F(i).v[j];
+			i_vertices.push_back(m_environmentCube->V(i_vertexInd).x);
+			i_vertices.push_back(m_environmentCube->V(i_vertexInd).y);
+			i_vertices.push_back(m_environmentCube->V(i_vertexInd).z);
+		}
 	}
 
 	glGenVertexArrays(1, &m_VAO);
@@ -313,6 +319,11 @@ cEnvironmentShaderProgram::cEnvironmentShaderProgram()
 	glBufferData(GL_ARRAY_BUFFER, i_vertices.size() * sizeof(GLfloat), i_vertices.data(), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	LinkShaders("Assets/background/EnvCubeVertexShader.glsl", "Assets/background/EnvCubeFragmentShader.glsl");
 }
 
 bool cEnvironmentShaderProgram::UploadEnvironmentTexture(std::vector<std::string> i_fileNames)
@@ -342,6 +353,8 @@ bool cEnvironmentShaderProgram::UploadEnvironmentTexture(std::vector<std::string
 
 void cEnvironmentShaderProgram::DrawCall()
 {
+	///glClear(GL_DEPTH_BUFFER_BIT);
+
 	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_FALSE);
 

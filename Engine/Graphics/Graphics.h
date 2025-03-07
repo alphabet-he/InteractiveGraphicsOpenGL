@@ -101,11 +101,13 @@ private:
 	size_t m_bufferSize;
 
 public:
+	cVertexShaderProgram();
+
 	cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferStruct);
 
 	virtual cMesh* UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
 
-	virtual void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
+	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 
 	void SetMVPMatrix(glm::mat4 i_matrix, eMVPMatrixFlags i_matrixName);
 
@@ -115,7 +117,7 @@ public:
 	virtual void DrawCall();
 };
 
-class cEnvironmentShaderProgram: cVertexShaderProgram {
+class cEnvironmentShaderProgram: public cVertexShaderProgram {
 
 private:
 	cy::TriMesh* m_environmentCube;

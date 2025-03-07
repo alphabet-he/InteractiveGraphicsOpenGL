@@ -12,8 +12,7 @@ cMyApplication::cMyApplication()
 void cMyApplication::CustomInitialization()
 {
 	// background vertex buffer
-	sVertexBufferStruct* i_backgroundBufferStruct = new sVertexBufferStruct(true, false, true);
-	m_backgroundProgram = new cVertexShaderProgram(i_backgroundBufferStruct);
+	m_backgroundProgram = new cEnvironmentShaderProgram();
 
 	// display vertex buffer
 	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true);
@@ -25,7 +24,7 @@ void cMyApplication::CustomInitialization()
 	m_lastBackgroundChangeTime = glfwGetTime();
 
 	// set background
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// set mvp matrix
 	cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
@@ -44,6 +43,20 @@ void cMyApplication::CustomInitialization()
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 	m_displayProgram->SetMVPMatrix(m_modelMat, MODEL);
+
+	m_backgroundProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+	m_backgroundProgram->SetMVPMatrix(glm::mat4(1.0f), MODEL);
+
+	std::vector<std::string> i_fileNames = {
+		"Assets/background/cubemap_posx.png",
+		"Assets/background/cubemap_negx.png",
+		"Assets/background/cubemap_posy.png",
+		"Assets/background/cubemap_negy.png",
+		"Assets/background/cubemap_posz.png",
+		"Assets/background/cubemap_negz.png",
+	};
+
+	m_backgroundProgram->UploadEnvironmentTexture(i_fileNames);
 
 	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
@@ -101,6 +114,7 @@ void cMyApplication::MainLoopFunc()
 	//ChangeBackground(1.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 	glViewport(0, 0, m_windowWidth, m_windowHeight);
 
 	// input
@@ -142,14 +156,17 @@ void cMyApplication::MainLoopFunc()
 	}
 
 	m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
-
 	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
 	glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
 	m_displayProgram->SetCameraPosition(i_cameraPos);
-
 	m_displayProgram->SetLightingPosition(m_lightPosition);
 
+	glm::mat4 i_environmentViewMat = glm::mat4(glm::mat3(m_viewMat));
+	m_backgroundProgram->SetMVPMatrix(i_environmentViewMat, VIEW);
+
 	m_displayProgram->DrawCall();
+
+	m_backgroundProgram->DrawCall();
 	
 }
 
