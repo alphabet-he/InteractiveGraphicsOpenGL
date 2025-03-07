@@ -20,19 +20,15 @@ void cMyApplication::CustomInitialization()
 	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
 	m_displayProgram->LinkShaders("Assets/ReflectionVertexShader.glsl", "Assets/ReflectionFragmentShader.glsl");
 
-	// set time
-	m_lastBackgroundChangeTime = glfwGetTime();
-
-	// set background
-	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
 	// set mvp matrix
 	cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
 	glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
-	m_modelMat = glm::mat4(1.0f);
-	m_modelMat = glm::translate(m_modelMat, -i_center); 
-	m_modelMat = glm::scale(m_modelMat, glm::vec3(0.1f));
-	m_modelMat = glm::rotate(m_modelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+	glm::mat4 i_teapotModelMat = glm::mat4(1.0f);
+	i_teapotModelMat = glm::translate(i_teapotModelMat, -i_center); 
+	i_teapotModelMat = glm::scale(i_teapotModelMat, glm::vec3(0.1f));
+	i_teapotModelMat = glm::rotate(i_teapotModelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+	i_teapotMesh->SetModelMat(i_teapotModelMat);
+
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	m_viewMatWhenPressed = m_viewMat;
 	m_projectionMat = glm::perspective(
@@ -42,7 +38,6 @@ void cMyApplication::CustomInitialization()
 	);
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
-	m_displayProgram->SetMVPMatrix(m_modelMat, MODEL);
 
 	m_backgroundProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 	m_backgroundProgram->SetMVPMatrix(glm::mat4(1.0f), MODEL);

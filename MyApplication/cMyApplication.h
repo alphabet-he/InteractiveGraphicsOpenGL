@@ -28,7 +28,6 @@ private:
 	double m_input_mouseLocationWhenPressedY = INT_MIN;
 	glm::mat4 m_viewMatWhenPressed;
 
-	glm::mat4 m_modelMat;
 	glm::mat4 m_viewMat;
 	glm::mat4 m_projectionMat;
 

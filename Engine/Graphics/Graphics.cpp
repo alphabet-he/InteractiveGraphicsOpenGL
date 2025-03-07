@@ -300,6 +300,7 @@ void cVertexShaderProgram::DrawCall()
 
 			i_textureUnit++;
 		}
+		SetMVPMatrix(i_mesh->m_modelMat, MODEL);
 		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
 	}
 	glBindVertexArray(0);
