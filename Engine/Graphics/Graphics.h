@@ -40,15 +40,16 @@ public:
 	cy::TriMesh* m_cyMesh;
 	std::vector<std::pair<GLuint, eTextureUsageFlags>> m_textureBinding;
 	size_t m_bufferOffset;
-	glm::mat4 m_modelMat;
+	glm::mat4 m_modelMat; //TODO: Change accessibility
 
 public:
 	cMesh() :m_cyMesh(nullptr), m_bufferOffset(0) {
 		m_textureBinding.clear();
+		m_modelMat = glm::mat4(1.0f);
 	}
 	void UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
 	void UploadSkyboxReflectionTexture(GLuint i_skybox);
-	inline void SetModelMat(glm::mat4 i_model) { m_modelMat = i_model; };
+	inline void SetModelMat(const glm::mat4& i_model) { m_modelMat = i_model; };
 };
 
 // Bitmask Flags for Attributes
@@ -96,7 +97,8 @@ protected:
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
 
 private:
-	size_t m_VBOoffset;
+	size_t m_VBOByteOffset;
+	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
 	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection;

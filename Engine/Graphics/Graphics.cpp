@@ -62,7 +62,7 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 	glBindVertexArray(m_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
 
-	m_bufferSize = 1 * 1024 * 1024;
+	m_bufferSize = 2 * 1024 * 1024;
 
 	// Allocate buffer storage with Persistent Mapping & Coherent flags
 	glBufferStorage(GL_ARRAY_BUFFER, m_bufferSize, NULL,
@@ -73,7 +73,8 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
 	// Track offset
-	m_VBOoffset = 0;
+	m_VBOByteOffset = 0;
+	m_VBOVerticeOffset = 0;
 
 	GLuint i_attributeIndex = 0;
 	size_t i_stride = 0;
@@ -151,16 +152,46 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 		return nullptr;
 	}
 
-
-	if (m_VBOoffset + i_dataSize > m_bufferSize) { // BUFFER_SIZE should be total allocated buffer size
+	if (m_VBOByteOffset + i_dataSize > m_bufferSize) { // BUFFER_SIZE should be total allocated buffer size
 		std::cerr << "ERROR: Not enough buffer space for mesh data!" << std::endl;
 		// TODO: expand the buffer
 		return nullptr;
 	}
 
-	memcpy(m_mappedBuffer + m_VBOoffset, i_vertices.data(), i_dataSize);
-	i_mesh->m_bufferOffset = 0;
-	m_VBOoffset += i_dataSize;
+	// Ensure memory barrier before writing
+	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+
+	// Ensure pointer arithmetic is correct
+	char* targetAddress = reinterpret_cast<char*>(m_mappedBuffer) + m_VBOByteOffset;
+
+	// Debug before memcpy
+	//std::cout << "Before memcpy - Byte Offset: " << m_VBOByteOffset << std::endl;
+
+	// Copy data
+	memcpy(targetAddress, i_vertices.data(), i_dataSize);
+
+	// Debug after memcpy
+	//std::cout << "After memcpy - Checking buffer values:\n";
+	//for (size_t i = 0; i < 72; ++i) {
+	//	std::cout << reinterpret_cast<float*>(targetAddress)[i] << " ";
+	//}
+	//std::cout << std::endl;
+
+	// Ensure the buffer is updated
+	//glFlushMappedBufferRange(GL_ARRAY_BUFFER, m_VBOByteOffset, i_dataSize);
+
+	i_mesh->m_bufferOffset = m_VBOVerticeOffset;
+	m_VBOByteOffset += i_dataSize;
+	m_VBOVerticeOffset += i_mesh->m_cyMesh->NF() * 3;
+
+	std::cout << "Dumping mapped buffer data...\n";
+	float* mappedData = reinterpret_cast<float*>(m_mappedBuffer);
+
+	for (size_t i = 0; i < 72; ++i) { // Print first 20 floats
+		std::cout << mappedData[i] << " ";
+	}
+	std::cout << std::endl;
+
 
 	// upload textures
 	if (i_textureUsage->useAnyTexture()) {
@@ -300,8 +331,14 @@ void cVertexShaderProgram::DrawCall()
 
 			i_textureUnit++;
 		}
-		SetMVPMatrix(i_mesh->m_modelMat, MODEL);
+
+		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
 		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+
+		GLenum err;
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL ERROR: " << err << std::endl;
+		}
 	}
 	glBindVertexArray(0);
 }
@@ -365,7 +402,6 @@ bool cEnvironmentShaderProgram::UploadEnvironmentTexture(std::vector<std::string
 
 void cEnvironmentShaderProgram::DrawCall()
 {
-	///glClear(GL_DEPTH_BUFFER_BIT);
 
 	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_FALSE);

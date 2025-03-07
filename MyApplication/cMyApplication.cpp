@@ -17,17 +17,31 @@ void cMyApplication::CustomInitialization()
 	// display vertex buffer
 	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, false);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
 	m_displayProgram->LinkShaders("Assets/ReflectionVertexShader.glsl", "Assets/ReflectionFragmentShader.glsl");
+	
+	// set teapot
+	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
+	// set model matrix
+	{
+		cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
+		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::translate(i_ModelMat, -i_center);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
+		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		i_teapotMesh->SetModelMat(i_ModelMat);
+	}
 
-	// set mvp matrix
-	cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-	glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
-	glm::mat4 i_teapotModelMat = glm::mat4(1.0f);
-	i_teapotModelMat = glm::translate(i_teapotModelMat, -i_center); 
-	i_teapotModelMat = glm::scale(i_teapotModelMat, glm::vec3(0.1f));
-	i_teapotModelMat = glm::rotate(i_teapotModelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
-	i_teapotMesh->SetModelMat(i_teapotModelMat);
+	// set plane
+	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
+	{
+		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
+		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
+		i_ModelMat = glm::translate(i_ModelMat, -i_center);
+		i_planeMesh->SetModelMat(i_ModelMat);
+	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	m_viewMatWhenPressed = m_viewMat;
@@ -54,6 +68,7 @@ void cMyApplication::CustomInitialization()
 	m_backgroundProgram->UploadEnvironmentTexture(i_fileNames);
 
 	i_teapotMesh->UploadSkyboxReflectionTexture(m_backgroundProgram->GetEnvTexInt());
+	i_planeMesh->UploadSkyboxReflectionTexture(m_backgroundProgram->GetEnvTexInt());
 
 	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
 
