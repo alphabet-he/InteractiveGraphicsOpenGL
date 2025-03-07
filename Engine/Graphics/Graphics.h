@@ -6,7 +6,8 @@ enum eTextureUsageFlags {
 	AMBIENT = 1 << 0, // 0001
 	DIFFUSE = 1 << 1, // 0010
 	SPECULAR = 1 << 2,  // 0100
-	SKYBOX_REFLECTION = 1 << 3 // 1000
+	SKYBOX_REFLECTION = 1 << 3, // 1000
+	SCREEN_TEXTURE = 1 << 4
 };
 
 struct sTextureUsage {
@@ -48,7 +49,9 @@ public:
 		m_modelMat = glm::mat4(1.0f);
 	}
 	void UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
-	void UploadSkyboxReflectionTexture(GLuint i_skybox);
+	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
+		m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_tex, i_flag));
+	};
 	inline void SetModelMat(const glm::mat4& i_model) { m_modelMat = i_model; };
 };
 
@@ -89,19 +92,22 @@ enum eMVPMatrixFlags {
 class cVertexShaderProgram {
 
 public:
-	GLuint m_shaderProgram, m_VAO, m_VBO;
 	std::vector<cMesh*> m_meshes;
 	sVertexBufferStruct* m_vertexBufferStruct;
 
 protected:
+	GLuint m_shaderProgram, m_VAO, m_VBO;
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
+
+	GLuint m_FBO, m_RBO, m_renderToTex;
+	uint16_t m_renderToTexWidth, m_renderToTexHeight;
 
 private:
 	size_t m_VBOOffset;
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection;
+	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_screenTexture;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
@@ -121,6 +127,12 @@ public:
 	void SetLightingPosition(glm::vec3 i_lightPos);
 
 	virtual void DrawCall();
+
+	void InitializeFrameBuffer(uint16_t i_width, uint16_t i_height);
+
+	GLuint RenderToTexture(glm::vec3 i_cameraLocation, 
+		glm::vec3 i_faceDirection, 
+		std::vector<cVertexShaderProgram*> i_programsToDraw);
 };
 
 class cEnvironmentShaderProgram: public cVertexShaderProgram {

@@ -46,8 +46,8 @@ void iApplication::Run()
 void iApplication::InitRenderToTexture()
 {
 	// frame buffer object
-	glGenFramebuffers(1, &FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glGenFramebuffers(1, &m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	
 	glGenTextures(1, &renderToTex);
 	glBindTexture(GL_TEXTURE_2D, renderToTex);

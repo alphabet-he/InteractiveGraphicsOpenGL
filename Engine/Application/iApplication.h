@@ -9,7 +9,7 @@ protected:
 	std::string m_windowTitle;
 
 	// render to texture
-	GLuint FBO, RBO, renderToTex;
+	GLuint m_FBO, RBO, renderToTex;
 	GLuint RenderToTextureVAO, RenerToTextureVBO;
 	GLuint RenderToTextureShaderProgram;
 	cy::TriMesh* renderToTexturePlane;

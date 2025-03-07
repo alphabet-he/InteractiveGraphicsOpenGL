@@ -32,17 +32,6 @@ void cMyApplication::CustomInitialization()
 		i_teapotMesh->SetModelMat(i_ModelMat);
 	}
 
-	// set plane
-	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
-	{
-		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
-		glm::mat4 i_ModelMat = glm::mat4(1.0f);
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
-		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_planeMesh->SetModelMat(i_ModelMat);
-	}
-
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	m_viewMatWhenPressed = m_viewMat;
 	m_projectionMat = glm::perspective(
@@ -67,11 +56,25 @@ void cMyApplication::CustomInitialization()
 
 	m_backgroundProgram->UploadEnvironmentTexture(i_fileNames);
 
-	i_teapotMesh->UploadSkyboxReflectionTexture(m_backgroundProgram->GetEnvTexInt());
-	i_planeMesh->UploadSkyboxReflectionTexture(m_backgroundProgram->GetEnvTexInt());
+	i_teapotMesh->UploadTexture(m_backgroundProgram->GetEnvTexInt(), SKYBOX_REFLECTION);
 
 	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
 
+	m_planeReflectionProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, true));
+	m_planeReflectionProgram->LinkShaders("Assets/RenderToTextureVertexShader.glsl", "Assets/RenderToTextureFragmentShader.glsl");
+	m_planeReflectionProgram->InitializeFrameBuffer(m_windowWidth, m_windowHeight);
+
+	cMesh* i_planeMesh = m_planeReflectionProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
+	{
+		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
+		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
+		i_ModelMat = glm::translate(i_ModelMat, -i_center);
+		i_planeMesh->SetModelMat(i_ModelMat);
+	}
+	m_planeReflectionProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+	i_planeMesh->UploadTexture(m_backgroundProgram->GetEnvTexInt(), SKYBOX_REFLECTION);
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -123,7 +126,31 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::MainLoopFunc()
 {
-	//ChangeBackground(1.0f);
+	// Actual camera position and forward direction
+	glm::mat4 i_viewInverseRef = glm::inverse(m_viewMat);
+	glm::vec3 cameraPos = glm::vec3(i_viewInverseRef[3]);
+	glm::vec3 cameraForward = -glm::vec3(i_viewInverseRef[2]); // Camera forward direction
+
+	// Reflective plane position (horizontal plane at y)
+	float planeY = m_planeReflectionProgram->m_meshes[0]->m_modelMat[3].y;
+
+	// Mirrored reflection camera position (below plane)
+	glm::vec3 i_reflectiveCameraPos = glm::vec3(
+		cameraPos.x,
+		2.0f * planeY - cameraPos.y,
+		cameraPos.z
+	);
+
+	// Mirrored reflection camera facing direction (vertically mirrored)
+	glm::vec3 i_reflectiveFaceDir = glm::vec3(
+		cameraForward.x,
+		-cameraForward.y,  // flipping vertical component
+		cameraForward.z
+	);
+
+	std::vector<cVertexShaderProgram*> i_programs = { m_displayProgram, m_backgroundProgram };
+	GLuint i_screenTex = m_planeReflectionProgram->RenderToTexture(i_reflectiveCameraPos, i_reflectiveFaceDir, i_programs);
+	m_planeReflectionProgram->m_meshes[0]->UploadTexture(i_screenTex, SCREEN_TEXTURE);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -173,10 +200,16 @@ void cMyApplication::MainLoopFunc()
 	m_displayProgram->SetCameraPosition(i_cameraPos);
 	m_displayProgram->SetLightingPosition(m_lightPosition);
 
+	m_planeReflectionProgram->SetMVPMatrix(m_viewMat, VIEW);
+	m_planeReflectionProgram->SetCameraPosition(i_cameraPos);
+	m_planeReflectionProgram->SetLightingPosition(m_lightPosition);
+
 	glm::mat4 i_environmentViewMat = glm::mat4(glm::mat3(m_viewMat));
 	m_backgroundProgram->SetMVPMatrix(i_environmentViewMat, VIEW);
 
 	m_displayProgram->DrawCall();
+
+	m_planeReflectionProgram->DrawCall();
 
 	m_backgroundProgram->DrawCall();
 	

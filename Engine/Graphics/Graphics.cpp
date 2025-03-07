@@ -41,11 +41,6 @@ void cMesh::UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textu
 	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
 }
 
-void cMesh::UploadSkyboxReflectionTexture(GLuint i_skybox)
-{
-	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_skybox, SKYBOX_REFLECTION));
-}
-
 cVertexShaderProgram::cVertexShaderProgram()
 {
 	//TODO: Abstract an actual parent class
@@ -229,6 +224,7 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
 	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
 	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
+	m_screenTexture = glGetUniformLocation(m_shaderProgram, "screen_texture");
 
 	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
 	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
@@ -299,6 +295,14 @@ void cVertexShaderProgram::DrawCall()
 				glBindTexture(GL_TEXTURE_CUBE_MAP, i_texBinding.first);
 				glUniform1i(m_textureSkyboxReflection, i_textureUnit);
 				break;
+			case SCREEN_TEXTURE:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
+				glUniform1i(m_screenTexture, i_textureUnit);
+				GLenum err;
+				while ((err = glGetError()) != GL_NO_ERROR) {
+					std::cerr << "OpenGL ERROR: " << err << std::endl;
+				}
+				break;
 			}
 
 			i_textureUnit++;
@@ -306,13 +310,72 @@ void cVertexShaderProgram::DrawCall()
 
 		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
 		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
-
-		GLenum err;
-		while ((err = glGetError()) != GL_NO_ERROR) {
-			std::cerr << "OpenGL ERROR: " << err << std::endl;
-		}
 	}
 	glBindVertexArray(0);
+}
+
+void cVertexShaderProgram::InitializeFrameBuffer(uint16_t i_width, uint16_t i_height)
+{
+	m_renderToTexWidth = i_width;
+	m_renderToTexHeight = i_height;
+
+	// frame buffer object
+	glGenFramebuffers(1, &m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	glGenTextures(1, &m_renderToTex);
+	glBindTexture(GL_TEXTURE_2D, m_renderToTex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, i_width, i_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // BILINEAR
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // MIP MAPPING
+	float maxAniso = 0.0f;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso); // Get maximum level
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// attach the screen texture to the frame buffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_renderToTex, 0);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "ERROR: Framebuffer is not complete! Status: " << status << std::endl;
+	}
+
+	// render buffer object
+	glGenRenderbuffers(1, &m_RBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, i_width, i_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO);
+
+	// unbind framebuffer
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+GLuint cVertexShaderProgram::RenderToTexture(glm::vec3 i_cameraLocation, glm::vec3 i_faceDirection, std::vector<cVertexShaderProgram*> i_programsToDraw)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	glViewport(0, 0, m_renderToTexWidth, m_renderToTexHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glm::mat4 i_viewMatrix = glm::lookAt(i_cameraLocation, i_cameraLocation + i_faceDirection, glm::vec3(0.0f, 1.0f, 0.0f));
+
+	for (cVertexShaderProgram* i_program : i_programsToDraw) {
+		i_program->SetMVPMatrix(i_viewMatrix, VIEW);
+		i_program->DrawCall();
+	}
+	// generate mipmaps
+	glBindTexture(GL_TEXTURE_2D, m_renderToTex);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	return m_renderToTex;
 }
 
 cEnvironmentShaderProgram::cEnvironmentShaderProgram()

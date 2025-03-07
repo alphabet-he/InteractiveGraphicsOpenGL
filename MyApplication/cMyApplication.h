@@ -18,6 +18,7 @@ private:
 private:
 	cEnvironmentShaderProgram* m_backgroundProgram;
 	cVertexShaderProgram* m_displayProgram;
+	cVertexShaderProgram* m_planeReflectionProgram;
 
 	double m_lastBackgroundChangeTime = 0;
 
