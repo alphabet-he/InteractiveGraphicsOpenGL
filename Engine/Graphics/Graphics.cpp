@@ -73,7 +73,7 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
 	// Track offset
-	m_VBOByteOffset = 0;
+	m_VBOOffset = 0;
 	m_VBOVerticeOffset = 0;
 
 	GLuint i_attributeIndex = 0;
@@ -152,45 +152,17 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 		return nullptr;
 	}
 
-	if (m_VBOByteOffset + i_dataSize > m_bufferSize) { // BUFFER_SIZE should be total allocated buffer size
+	if (m_VBOOffset + i_dataSize > m_bufferSize) { // BUFFER_SIZE should be total allocated buffer size
 		std::cerr << "ERROR: Not enough buffer space for mesh data!" << std::endl;
 		// TODO: expand the buffer
 		return nullptr;
 	}
 
-	// Ensure memory barrier before writing
-	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-
-	// Ensure pointer arithmetic is correct
-	char* targetAddress = reinterpret_cast<char*>(m_mappedBuffer) + m_VBOByteOffset;
-
-	// Debug before memcpy
-	//std::cout << "Before memcpy - Byte Offset: " << m_VBOByteOffset << std::endl;
-
-	// Copy data
-	memcpy(targetAddress, i_vertices.data(), i_dataSize);
-
-	// Debug after memcpy
-	//std::cout << "After memcpy - Checking buffer values:\n";
-	//for (size_t i = 0; i < 72; ++i) {
-	//	std::cout << reinterpret_cast<float*>(targetAddress)[i] << " ";
-	//}
-	//std::cout << std::endl;
-
-	// Ensure the buffer is updated
-	//glFlushMappedBufferRange(GL_ARRAY_BUFFER, m_VBOByteOffset, i_dataSize);
+	memcpy(m_mappedBuffer + m_VBOOffset, i_vertices.data(), i_dataSize);
 
 	i_mesh->m_bufferOffset = m_VBOVerticeOffset;
-	m_VBOByteOffset += i_dataSize;
+	m_VBOOffset += i_dataSize/sizeof(GLfloat);
 	m_VBOVerticeOffset += i_mesh->m_cyMesh->NF() * 3;
-
-	std::cout << "Dumping mapped buffer data...\n";
-	float* mappedData = reinterpret_cast<float*>(m_mappedBuffer);
-
-	for (size_t i = 0; i < 72; ++i) { // Print first 20 floats
-		std::cout << mappedData[i] << " ";
-	}
-	std::cout << std::endl;
 
 
 	// upload textures

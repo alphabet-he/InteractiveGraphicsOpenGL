@@ -97,7 +97,7 @@ protected:
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
 
 private:
-	size_t m_VBOByteOffset;
+	size_t m_VBOOffset;
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
