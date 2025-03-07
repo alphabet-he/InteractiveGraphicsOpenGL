@@ -8,7 +8,6 @@ protected:
 	uint16_t m_windowWidth;
 	std::string m_windowTitle;
 
-
 	// render to texture
 	GLuint FBO, RBO, renderToTex;
 	GLuint RenderToTextureVAO, RenerToTextureVBO;

@@ -1,5 +1,6 @@
 #pragma once
 #include <Application/iApplication.h>
+#include <Graphics/Graphics.h>
 
 class cMyApplication : public iApplication
 {
@@ -15,6 +16,9 @@ private:
 	void ChangeBackground(double i_deltaTime);
 
 private:
+	cVertexShaderProgram* m_backgroundProgram;
+	cVertexShaderProgram* m_displayProgram;
+
 	double m_lastBackgroundChangeTime = 0;
 
 	bool m_input_leftMouseButton = false;

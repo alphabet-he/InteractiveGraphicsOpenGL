@@ -186,6 +186,9 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
     <ProjectReference Include="..\Engine\Application\Application.vcxproj">
       <Project>{cb11bc01-7330-45b7-aad5-a3fd9ce03a29}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Engine\Graphics\Graphics.vcxproj">
+      <Project>{a79e8e93-b5b9-407d-ad72-33113ca766d3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cMyApplication.cpp" />

@@ -11,13 +11,15 @@ cMyApplication::cMyApplication()
 
 void cMyApplication::CustomInitialization()
 {
-	// mesh
-	m_meshToRender = new cy::TriMesh();
-	UploadTriMesh("Assets/teapot/teapot.obj");
-	m_meshToRender->ComputeBoundingBox();
+	// background vertex buffer
+	sVertexBufferStruct* i_backgroundBufferStruct = new sVertexBufferStruct(true, false, true);
+	m_backgroundProgram = new cVertexShaderProgram(i_backgroundBufferStruct);
 
-	// shader
-	LinkShaders("Assets/TextureVertexShader.glsl", "Assets/TextureFragmentShader.glsl");
+	// display vertex buffer
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true);
+	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
+	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, true, true));
+	m_displayProgram->LinkShaders("Assets/TextureVertexShader.glsl", "Assets/TextureFragmentShader.glsl");
 
 	// set time
 	m_lastBackgroundChangeTime = glfwGetTime();
@@ -26,10 +28,12 @@ void cMyApplication::CustomInitialization()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// set mvp matrix
-	float i_centerZ = (m_meshToRender->GetBoundMax().z + m_meshToRender->GetBoundMin().z) * 0.5f;
-	m_modelMat = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
+	cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
+	glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
+	m_modelMat = glm::mat4(1.0f);
+	m_modelMat = glm::translate(m_modelMat, -i_center); 
+	m_modelMat = glm::scale(m_modelMat, glm::vec3(0.1f));
 	m_modelMat = glm::rotate(m_modelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
-	m_modelMat = glm::translate(m_modelMat, glm::vec3(0, 0, -i_centerZ));
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	m_viewMatWhenPressed = m_viewMat;
 	m_projectionMat = glm::perspective(
@@ -38,13 +42,8 @@ void cMyApplication::CustomInitialization()
 		0.1f, 100.0f  // Near & Far plane
 	);
 	
-	glUseProgram(ShaderProgram);
-
-	GLuint i_model = glGetUniformLocation(ShaderProgram, "model");
-	glUniformMatrix4fv(i_model, 1, GL_FALSE, glm::value_ptr(m_modelMat));
-
-	GLuint i_projection = glGetUniformLocation(ShaderProgram, "projection");
-	glUniformMatrix4fv(i_projection, 1, GL_FALSE, glm::value_ptr(m_projectionMat));
+	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+	m_displayProgram->SetMVPMatrix(m_modelMat, MODEL);
 
 	m_lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
@@ -65,11 +64,6 @@ void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int 
 		else if (action == GLFW_RELEASE){
 			m_input_ctrlKey = false;
 		}
-	}
-
-	// recompile shaders
-	if (key == GLFW_KEY_F6 && action == GLFW_PRESS) {
-		LinkShaders("Assets/NormalVertexShader.glsl", "Assets/NormalFragmentShader.glsl");
 	}
 }
 
@@ -106,78 +100,56 @@ void cMyApplication::MainLoopFunc()
 {
 	//ChangeBackground(1.0f);
 
-	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, m_windowWidth, m_windowHeight);
+
+	// input
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, m_windowWidth, m_windowHeight);
-
-		glUseProgram(ShaderProgram);
-
-		// input
-		{
-			if (m_input_leftMouseButton) {
-				double i_mousePos_x = INT_MIN;
-				double i_mousePos_y = INT_MIN;
-				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-					if (m_input_ctrlKey) {
-						glm::mat4 i_rotationMatrix = glm::rotate(
-							glm::mat4(1.0f),
-							glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX) * 0.1f,
-							glm::vec3(0.0f, 1.0f, 0.0f));
-						m_lightPosition = i_rotationMatrix * glm::vec4(m_lightPosition, 1.0f);
-					}
-					else {
-						m_viewMat = glm::rotate(
-							m_viewMatWhenPressed,
-							glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
-							glm::vec3(0, 0.5, 0));
-						m_viewMat = glm::rotate(
-							m_viewMat,
-							glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
-							glm::vec3(0.5, 0, 0));
-					}
+		if (m_input_leftMouseButton) {
+			double i_mousePos_x = INT_MIN;
+			double i_mousePos_y = INT_MIN;
+			glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+			if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+				if (m_input_ctrlKey) {
+					glm::mat4 i_rotationMatrix = glm::rotate(
+						glm::mat4(1.0f),
+						glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX) * 0.1f,
+						glm::vec3(0.0f, 1.0f, 0.0f));
+					m_lightPosition = i_rotationMatrix * glm::vec4(m_lightPosition, 1.0f);
 				}
-			}
-			else if (m_input_rightMouseButton) {
-				double i_mousePos_x = INT_MIN;
-				double i_mousePos_y = INT_MIN;
-				glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
-				if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
-					m_viewMat = glm::translate(
+				else {
+					m_viewMat = glm::rotate(
 						m_viewMatWhenPressed,
-						glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
+						glm::radians((float)i_mousePos_x - (float)m_input_mouseLocationWhenPressedX),
+						glm::vec3(0, 0.5, 0));
+					m_viewMat = glm::rotate(
+						m_viewMat,
+						glm::radians((float)i_mousePos_y - (float)m_input_mouseLocationWhenPressedY),
+						glm::vec3(0.5, 0, 0));
 				}
 			}
 		}
-		
-
-		GLuint i_view = glGetUniformLocation(ShaderProgram, "view");
-		glUniformMatrix4fv(i_view, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0))));
-
-		glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
-		glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
-		GLuint i_camera = glGetUniformLocation(ShaderProgram, "camera_position");
-		glUniform3f(i_camera, i_cameraPos.x, i_cameraPos.y, i_cameraPos.z);
-
-		GLuint i_light = glGetUniformLocation(ShaderProgram, "light_position");
-		glUniform3f(i_light, m_lightPosition.x, m_lightPosition.y, m_lightPosition.z);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseTex);
-		glUniform1i(glGetUniformLocation(ShaderProgram, "texture_diffuse"), 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, specularTex);
-		glUniform1i(glGetUniformLocation(ShaderProgram, "texture_specular"), 1);
-
-		glEnable(GL_CULL_FACE);
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, m_meshToRender->NF() * 3);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		else if (m_input_rightMouseButton) {
+			double i_mousePos_x = INT_MIN;
+			double i_mousePos_y = INT_MIN;
+			glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);
+			if (i_mousePos_x != INT_MIN && i_mousePos_y != INT_MIN) {
+				m_viewMat = glm::translate(
+					m_viewMatWhenPressed,
+					glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
+			}
+		}
 	}
+
+	m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
+
+	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
+	glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
+	m_displayProgram->SetCameraPosition(i_cameraPos);
+
+	m_displayProgram->SetLightingPosition(m_lightPosition);
+
+	m_displayProgram->DrawCall();
 	
 }
 

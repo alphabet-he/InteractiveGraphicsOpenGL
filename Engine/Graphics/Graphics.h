@@ -41,6 +41,9 @@ public:
 	size_t m_bufferOffset;
 
 public:
+	cMesh() :m_cyMesh(nullptr), m_bufferOffset(0) {
+		m_textureBinding.clear();
+	}
 	void UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
 };
 
@@ -72,23 +75,58 @@ public:
 	sVertexBufferStruct() = default;
 };
 
+enum eMVPMatrixFlags {
+	MODEL = 1 << 0, // 0001
+	VIEW = 1 << 1, // 0010
+	PROJECTION = 1 << 2  // 0100
+};
+
 class cVertexShaderProgram {
 
 public:
 	GLuint m_shaderProgram, m_VAO, m_VBO;
 	std::vector<cMesh*> m_meshes;
-	sVertexBufferStruct m_vertexBufferStruct;
+	sVertexBufferStruct* m_vertexBufferStruct;
+
+protected:
+	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
 
 private:
 	size_t m_VBOoffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
+	GLuint m_textureKa, m_textureKd, m_textureKs;
+	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
+
+	size_t m_bufferSize;
+
 public:
-	cVertexShaderProgram(sVertexBufferStruct i_vertexBufferStruct);
+	cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferStruct);
 
-	cMesh* UploadMesh(const char* i_meshObjPath, sTextureUsage i_textureUsage);
+	virtual cMesh* UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
 
-	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
+	virtual void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
+
+	void SetMVPMatrix(glm::mat4 i_matrix, eMVPMatrixFlags i_matrixName);
+
+	void SetCameraPosition(glm::vec3 i_cameraPos);
+	void SetLightingPosition(glm::vec3 i_lightPos);
+
+	virtual void DrawCall();
+};
+
+class cEnvironmentShaderProgram: cVertexShaderProgram {
+
+private:
+	cy::TriMesh* m_environmentCube;
+	GLuint m_environmentTexture;
+
+public:
+	cEnvironmentShaderProgram();
+
+	bool UploadEnvironmentTexture(std::vector<std::string> i_fileNames);
+
+	void DrawCall() override;
 };
 
 
