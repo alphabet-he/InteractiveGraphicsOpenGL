@@ -167,7 +167,9 @@ public:
 
 	void DrawCall() override;
 
-	inline GLuint GetEnvTexInt() { return m_environmentTexture; };
+	inline void SetMeshReflection(cMesh i_mesh) {
+		i_mesh.UploadTexture(m_environmentTexture, SKYBOX_REFLECTION);
+	}
 };
 
 
