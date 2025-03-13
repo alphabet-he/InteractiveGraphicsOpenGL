@@ -49,7 +49,7 @@ public:
 		m_textureBinding.clear();
 		m_modelMat = glm::mat4(1.0f);
 	}
-	void UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
+	void UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
 		m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_tex, i_flag));
 	};

@@ -1,6 +1,6 @@
 #include "Graphics.h"
 
-void cMesh::UploadTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir)
+void cMesh::UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir)
 {
 	const char* i_textureFileName;
 	switch (i_textureUsage)
@@ -168,15 +168,15 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 
 		// ambient
 		if (i_textureUsage->useTexture(AMBIENT)) {
-			i_mesh->UploadTexture(AMBIENT, directory);
+			i_mesh->UploadADSTexture(AMBIENT, directory);
 		}
 		// diffuse
 		if (i_textureUsage->useTexture(DIFFUSE)) {
-			i_mesh->UploadTexture(DIFFUSE, directory);
+			i_mesh->UploadADSTexture(DIFFUSE, directory);
 		}
 		// specular
 		if (i_textureUsage->useTexture(SPECULAR)) {
-			i_mesh->UploadTexture(SPECULAR, directory);
+			i_mesh->UploadADSTexture(SPECULAR, directory);
 		}
 	}
 

@@ -106,14 +106,6 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::MainLoopFunc()
 {
-	m_displayProgram->RenderShadowMap(m_lightPosition,
-		glm::vec3(m_displayProgram->m_meshes[0]->m_modelMat[3]),
-		45.0f, 0.1f, 10.0f);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glViewport(0, 0, m_windowWidth, m_windowHeight);
-
 	// input
 	{
 		if (m_input_leftMouseButton) {
@@ -151,6 +143,14 @@ void cMyApplication::MainLoopFunc()
 			}
 		}
 	}
+
+	m_displayProgram->RenderShadowMap(m_lightPosition,
+		glm::vec3(m_displayProgram->m_meshes[0]->m_modelMat[3]),
+		45.0f, 0.1f, 10.0f);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glViewport(0, 0, m_windowWidth, m_windowHeight);
 
 	m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
 	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
