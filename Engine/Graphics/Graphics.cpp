@@ -224,7 +224,6 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
 	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
 	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
-	m_screenTexture = glGetUniformLocation(m_shaderProgram, "screen_texture");
 
 	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
 	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
@@ -296,11 +295,25 @@ void cVertexShaderProgram::DrawCall()
 				glUniform1i(m_textureSkyboxReflection, i_textureUnit);
 				break;
 			case SCREEN_TEXTURE:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_screenTexture, i_textureUnit);
-				GLenum err;
-				while ((err = glGetError()) != GL_NO_ERROR) {
-					std::cerr << "OpenGL ERROR: " << err << std::endl;
+				if (m_screenTextureInfo) {
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
+					glUniform1i(m_screenTextureInfo->m_screenTextureTexPosition, i_textureUnit);
+					GLenum err;
+					while ((err = glGetError()) != GL_NO_ERROR) {
+						std::cerr << "OpenGL ERROR: " << err << std::endl;
+					}
+				}
+				else {
+					std::cerr << "ERROR: No screen reflection information" << std::endl;
+				}
+				break;
+			case SHADOW_MAP:
+				if (m_shadowMapInfo) {
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
+					glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, i_textureUnit);
+				}
+				else {
+					std::cerr << "ERROR: No shadow map information" << std::endl;
 				}
 				break;
 			}
@@ -356,6 +369,9 @@ void cVertexShaderProgram::InitializeScreenTexture(uint16_t i_width, uint16_t i_
 	// unbind framebuffer
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glUseProgram(m_shaderProgram);
+	m_screenTextureInfo->m_screenTextureTexPosition = glGetUniformLocation(m_shaderProgram, "screen_texture");
 }
 
 GLuint cVertexShaderProgram::RenderToScreenTexture(glm::vec3 i_cameraLocation, glm::vec3 i_faceDirection, std::vector<cVertexShaderProgram*> i_programsToDraw)
@@ -382,6 +398,11 @@ GLuint cVertexShaderProgram::RenderToScreenTexture(glm::vec3 i_cameraLocation, g
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	for (cMesh* i : m_meshes) {
+		i->UploadTexture(m_screenTextureInfo->m_texture, SCREEN_TEXTURE);
+	}
+
 	return m_screenTextureInfo->m_texture;
 }
 
@@ -426,6 +447,9 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	glLinkProgram(m_shadowMapInfo->m_shaderProgram);
 	delete i_vertexShader;
 	delete i_fragmentShader;
+
+	glUseProgram(m_shaderProgram);
+	m_shadowMapInfo->m_shadowMapTexPosition = glGetUniformLocation(m_shaderProgram, "shadow_map");
 }
 
 GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, 
@@ -455,9 +479,14 @@ GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glUseProgram(m_shaderProgram);
+	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE, 
+		glm::value_ptr(i_projMatrix * i_viewMatrix));
 
+	for (cMesh* i : m_meshes) {
+		i->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
+	}
 
-	return m_screenTextureInfo->m_texture;
+	return m_shadowMapInfo->m_texture;
 }
 
 GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightDirection,

@@ -93,12 +93,14 @@ enum eMVPMatrixFlags {
 struct sScreenTextureInfo {
 	GLuint m_FBO, m_RBO, m_texture;
 	uint16_t m_textureWidth, m_textureHeight;
+	GLuint m_screenTextureTexPosition;
 };
 
 struct sShadowMapInfo {
 	GLuint m_FBO, m_texture;
 	uint16_t m_textureWidth, m_textureHeight;
 	GLuint m_shaderProgram;
+	GLuint m_shadowMapTexPosition;
 };
 
 class cVertexShaderProgram {
@@ -119,7 +121,7 @@ private:
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_screenTexture;
+	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
