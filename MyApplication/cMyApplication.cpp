@@ -11,25 +11,33 @@ cMyApplication::cMyApplication()
 
 void cMyApplication::CustomInitialization()
 {
-	// background vertex buffer
-	m_backgroundProgram = new cEnvironmentShaderProgram();
 
 	// display vertex buffer
-	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, false);
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	m_displayProgram->LinkShaders("Assets/ReflectionVertexShader.glsl", "Assets/ReflectionFragmentShader.glsl");
+	m_displayProgram->LinkShaders("Assets/shader/ShadowVertexShader.glsl", "Assets/shader/ShadowFragmentShader.glsl");
 	
 	// set teapot
 	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
 	// set model matrix
 	{
 		cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
+		glm::vec3 i_center = glm::vec3(0, i_centerCy.y, i_centerCy.z);
 		glm::mat4 i_ModelMat = glm::mat4(1.0f);
 		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
 		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
 		i_teapotMesh->SetModelMat(i_ModelMat);
+	}
+	// plane
+	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
+	{
+		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
+		glm::vec3 i_center = glm::vec3(0, i_centerCy.y, i_centerCy.z);
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::translate(i_ModelMat, -i_center);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
+		i_planeMesh->SetModelMat(i_ModelMat);
 	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
@@ -42,39 +50,11 @@ void cMyApplication::CustomInitialization()
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 
-	m_backgroundProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
-	m_backgroundProgram->SetMVPMatrix(glm::mat4(1.0f), MODEL);
-
-	std::vector<std::string> i_fileNames = {
-		"Assets/background/cubemap_posx.png",
-		"Assets/background/cubemap_negx.png",
-		"Assets/background/cubemap_posy.png",
-		"Assets/background/cubemap_negy.png",
-		"Assets/background/cubemap_posz.png",
-		"Assets/background/cubemap_negz.png",
-	};
-
-	m_backgroundProgram->UploadEnvironmentTexture(i_fileNames);
-
-	i_teapotMesh->UploadTexture(m_backgroundProgram->GetEnvTexInt(), SKYBOX_REFLECTION);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
 
-	m_planeReflectionProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, true));
-	m_planeReflectionProgram->LinkShaders("Assets/RenderToTextureVertexShader.glsl", "Assets/RenderToTextureFragmentShader.glsl");
-	m_planeReflectionProgram->InitializeFrameBuffer(m_windowWidth, m_windowHeight);
-
-	cMesh* i_planeMesh = m_planeReflectionProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
-	{
-		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
-		glm::mat4 i_ModelMat = glm::mat4(1.0f);
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
-		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_planeMesh->SetModelMat(i_ModelMat);
-	}
-	m_planeReflectionProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
-	i_planeMesh->UploadTexture(m_backgroundProgram->GetEnvTexInt(), SKYBOX_REFLECTION);
+	m_displayProgram->InitializeShadowMap(m_windowWidth, m_windowHeight);
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -126,31 +106,9 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::MainLoopFunc()
 {
-	// Actual camera position and forward direction
-	glm::mat4 i_viewInverseRef = glm::inverse(m_viewMat);
-	glm::vec3 cameraPos = glm::vec3(i_viewInverseRef[3]);
-	glm::vec3 cameraForward = -glm::vec3(i_viewInverseRef[2]); // Camera forward direction
-
-	// Reflective plane position (horizontal plane at y)
-	float planeY = m_planeReflectionProgram->m_meshes[0]->m_modelMat[3].y;
-
-	// Mirrored reflection camera position (below plane)
-	glm::vec3 i_reflectiveCameraPos = glm::vec3(
-		cameraPos.x,
-		2.0f * planeY - cameraPos.y,
-		cameraPos.z
-	);
-
-	// Mirrored reflection camera facing direction (vertically mirrored)
-	glm::vec3 i_reflectiveFaceDir = glm::vec3(
-		cameraForward.x,
-		-cameraForward.y,  // flipping vertical component
-		cameraForward.z
-	);
-
-	std::vector<cVertexShaderProgram*> i_programs = { m_displayProgram, m_backgroundProgram };
-	GLuint i_screenTex = m_planeReflectionProgram->RenderToTexture(i_reflectiveCameraPos, i_reflectiveFaceDir, i_programs);
-	m_planeReflectionProgram->m_meshes[0]->UploadTexture(i_screenTex, SCREEN_TEXTURE);
+	m_displayProgram->RenderShadowMap(m_lightPosition,
+		glm::vec3(m_displayProgram->m_meshes[0]->m_modelMat[3]),
+		45.0f, 0.1f, 10.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -200,18 +158,7 @@ void cMyApplication::MainLoopFunc()
 	m_displayProgram->SetCameraPosition(i_cameraPos);
 	m_displayProgram->SetLightingPosition(m_lightPosition);
 
-	m_planeReflectionProgram->SetMVPMatrix(m_viewMat, VIEW);
-	m_planeReflectionProgram->SetCameraPosition(i_cameraPos);
-	m_planeReflectionProgram->SetLightingPosition(m_lightPosition);
-
-	glm::mat4 i_environmentViewMat = glm::mat4(glm::mat3(m_viewMat));
-	m_backgroundProgram->SetMVPMatrix(i_environmentViewMat, VIEW);
-
 	m_displayProgram->DrawCall();
-
-	m_planeReflectionProgram->DrawCall();
-
-	m_backgroundProgram->DrawCall();
 	
 }
 

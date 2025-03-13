@@ -314,17 +314,19 @@ void cVertexShaderProgram::DrawCall()
 	glBindVertexArray(0);
 }
 
-void cVertexShaderProgram::InitializeFrameBuffer(uint16_t i_width, uint16_t i_height)
+void cVertexShaderProgram::InitializeScreenTexture(uint16_t i_width, uint16_t i_height)
 {
-	m_renderToTexWidth = i_width;
-	m_renderToTexHeight = i_height;
+	m_screenTextureInfo = new sScreenTextureInfo();
+
+	m_screenTextureInfo->m_textureWidth = i_width;
+	m_screenTextureInfo->m_textureHeight = i_height;
 
 	// frame buffer object
-	glGenFramebuffers(1, &m_FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+	glGenFramebuffers(1, &(m_screenTextureInfo->m_FBO));
+	glBindFramebuffer(GL_FRAMEBUFFER, m_screenTextureInfo->m_FBO);
 
-	glGenTextures(1, &m_renderToTex);
-	glBindTexture(GL_TEXTURE_2D, m_renderToTex);
+	glGenTextures(1, &(m_screenTextureInfo->m_texture));
+	glBindTexture(GL_TEXTURE_2D, m_screenTextureInfo->m_texture);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, i_width, i_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -338,7 +340,7 @@ void cVertexShaderProgram::InitializeFrameBuffer(uint16_t i_width, uint16_t i_he
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// attach the screen texture to the frame buffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_renderToTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_screenTextureInfo->m_texture, 0);
 
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -346,21 +348,26 @@ void cVertexShaderProgram::InitializeFrameBuffer(uint16_t i_width, uint16_t i_he
 	}
 
 	// render buffer object
-	glGenRenderbuffers(1, &m_RBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, m_RBO);
+	glGenRenderbuffers(1, &(m_screenTextureInfo->m_RBO));
+	glBindRenderbuffer(GL_RENDERBUFFER, m_screenTextureInfo->m_RBO);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, i_width, i_height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_screenTextureInfo->m_RBO);
 
 	// unbind framebuffer
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-GLuint cVertexShaderProgram::RenderToTexture(glm::vec3 i_cameraLocation, glm::vec3 i_faceDirection, std::vector<cVertexShaderProgram*> i_programsToDraw)
+GLuint cVertexShaderProgram::RenderToScreenTexture(glm::vec3 i_cameraLocation, glm::vec3 i_faceDirection, std::vector<cVertexShaderProgram*> i_programsToDraw)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+	if (!m_screenTextureInfo) {
+		std::cout << "ERROR: Render to screen texture not initialized!" << std::endl;
+		return 0;
+	}
 
-	glViewport(0, 0, m_renderToTexWidth, m_renderToTexHeight);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_screenTextureInfo->m_FBO);
+
+	glViewport(0, 0, m_screenTextureInfo->m_textureWidth, m_screenTextureInfo->m_textureHeight);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glm::mat4 i_viewMatrix = glm::lookAt(i_cameraLocation, i_cameraLocation + i_faceDirection, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -370,12 +377,111 @@ GLuint cVertexShaderProgram::RenderToTexture(glm::vec3 i_cameraLocation, glm::ve
 		i_program->DrawCall();
 	}
 	// generate mipmaps
-	glBindTexture(GL_TEXTURE_2D, m_renderToTex);
+	glBindTexture(GL_TEXTURE_2D, m_screenTextureInfo->m_texture);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	return m_renderToTex;
+	return m_screenTextureInfo->m_texture;
+}
+
+void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_height)
+{
+	m_shadowMapInfo = new sShadowMapInfo();
+
+	m_shadowMapInfo->m_textureWidth = i_width;
+	m_shadowMapInfo->m_textureHeight = i_height;
+
+	// frame buffer object
+	glGenFramebuffers(1, &(m_shadowMapInfo->m_FBO));
+	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
+
+	glGenTextures(1, &(m_shadowMapInfo->m_texture));
+	glBindTexture(GL_TEXTURE_2D, m_shadowMapInfo->m_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, i_width, i_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // nearest filtering
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); // clamp to border and set border value
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	// bind depth texture to fbo
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_shadowMapInfo->m_texture, 0);
+
+	// unbind frame buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// create shader program for shadow map
+	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+	i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+	m_shadowMapInfo->m_shaderProgram = glCreateProgram();
+	glAttachShader(m_shadowMapInfo->m_shaderProgram, i_vertexShader->GetID());
+	glAttachShader(m_shadowMapInfo->m_shaderProgram, i_fragmentShader->GetID());
+	glLinkProgram(m_shadowMapInfo->m_shaderProgram);
+	delete i_vertexShader;
+	delete i_fragmentShader;
+}
+
+GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, 
+	float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane)
+{
+	if (!m_shadowMapInfo) {
+		std::cout << "ERROR: Shadow map not initialized!" << std::endl;
+		return 0;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
+	
+	glUseProgram(m_shadowMapInfo->m_shaderProgram);
+
+	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glm::mat4 i_viewMatrix = glm::lookAt(i_lightLocation, i_targetLocation, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 i_projMatrix = glm::perspective(glm::radians(i_lightConeAgnle), 
+		(float)m_shadowMapInfo->m_textureWidth / (float)m_shadowMapInfo->m_textureHeight,
+		i_lightingNearPlane, i_lightingFarPlane);
+
+	SetMVPMatrix(i_viewMatrix, VIEW);
+	SetMVPMatrix(i_projMatrix, PROJECTION);
+	DrawCall();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glUseProgram(m_shaderProgram);
+
+
+	return m_screenTextureInfo->m_texture;
+}
+
+GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightDirection,
+	float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane)
+{
+	if (!m_shadowMapInfo) {
+		std::cout << "ERROR: Shadow map not initialized!" << std::endl;
+		return 0;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
+
+	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glm::mat4 i_viewMatrix = glm::lookAt(-glm::normalize(i_lightDirection) * 10.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 i_projMatrix = glm::ortho(-i_orthoSize, i_orthoSize, -i_orthoSize, i_orthoSize, i_lightingNearPlane, i_lightingFarPlane);
+
+	SetMVPMatrix(i_viewMatrix, VIEW);
+	SetMVPMatrix(i_projMatrix, PROJECTION);
+	DrawCall();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	return m_screenTextureInfo->m_texture;
 }
 
 cEnvironmentShaderProgram::cEnvironmentShaderProgram()

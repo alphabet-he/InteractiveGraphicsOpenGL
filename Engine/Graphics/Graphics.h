@@ -7,7 +7,8 @@ enum eTextureUsageFlags {
 	DIFFUSE = 1 << 1, // 0010
 	SPECULAR = 1 << 2,  // 0100
 	SKYBOX_REFLECTION = 1 << 3, // 1000
-	SCREEN_TEXTURE = 1 << 4
+	SCREEN_TEXTURE = 1 << 4,
+	SHADOW_MAP = 1 << 5
 };
 
 struct sTextureUsage {
@@ -89,6 +90,17 @@ enum eMVPMatrixFlags {
 	PROJECTION = 1 << 2  // 0100
 };
 
+struct sScreenTextureInfo {
+	GLuint m_FBO, m_RBO, m_texture;
+	uint16_t m_textureWidth, m_textureHeight;
+};
+
+struct sShadowMapInfo {
+	GLuint m_FBO, m_texture;
+	uint16_t m_textureWidth, m_textureHeight;
+	GLuint m_shaderProgram;
+};
+
 class cVertexShaderProgram {
 
 public:
@@ -99,8 +111,8 @@ protected:
 	GLuint m_shaderProgram, m_VAO, m_VBO;
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
 
-	GLuint m_FBO, m_RBO, m_renderToTex;
-	uint16_t m_renderToTexWidth, m_renderToTexHeight;
+	sScreenTextureInfo* m_screenTextureInfo = nullptr;
+	sShadowMapInfo* m_shadowMapInfo = nullptr;
 
 private:
 	size_t m_VBOOffset;
@@ -128,11 +140,18 @@ public:
 
 	virtual void DrawCall();
 
-	void InitializeFrameBuffer(uint16_t i_width, uint16_t i_height);
-
-	GLuint RenderToTexture(glm::vec3 i_cameraLocation, 
+	void InitializeScreenTexture(uint16_t i_width, uint16_t i_height);
+	GLuint RenderToScreenTexture(glm::vec3 i_cameraLocation, 
 		glm::vec3 i_faceDirection, 
 		std::vector<cVertexShaderProgram*> i_programsToDraw);
+
+	void InitializeShadowMap(uint16_t i_width, uint16_t i_height);
+	// spot light
+	GLuint RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
+		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane);
+	// directional light
+	GLuint RenderShadowMap(glm::vec3 i_lightDirection,
+		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane);
 };
 
 class cEnvironmentShaderProgram: public cVertexShaderProgram {
