@@ -18,7 +18,7 @@ private:
 private:
 	
 	cVertexShaderProgram* m_displayProgram;
-	
+	cVertexShaderProgram* m_lightProgram;
 
 	double m_lastBackgroundChangeTime = 0;
 

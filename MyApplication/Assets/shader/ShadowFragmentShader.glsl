@@ -14,7 +14,7 @@ uniform vec3 object_color = vec3(0.9, 0.9, 0.9);
 
 uniform float k_ambient = 0.1;
 uniform float k_diffuse = 0.5;
-uniform float k_specular = 3.0; 
+uniform float k_specular = 2.0; 
 uniform float shininess = 64.0;
 
 uniform sampler2D shadow_map;

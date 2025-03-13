@@ -13,7 +13,7 @@ void cMyApplication::CustomInitialization()
 {
 
 	// display vertex buffer
-	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true);
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, false);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
 	m_displayProgram->LinkShaders("Assets/shader/ShadowVertexShader.glsl", "Assets/shader/ShadowFragmentShader.glsl");
 	
@@ -52,9 +52,20 @@ void cMyApplication::CustomInitialization()
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
+	m_lightPosition = glm::vec3(1.2f, 2.5f, 1.2f);
 
-	m_displayProgram->InitializeShadowMap(1024, 1024);
+	m_displayProgram->InitializeShadowMap(2048, 2048);
+
+	m_lightProgram = new cVertexShaderProgram(i_displayBufferStruct);
+	m_lightProgram->LinkShaders("Assets/shader/StandardVertexShader.glsl", "Assets/shader/StandardFragmentShader.glsl");
+	cMesh* i_lightMesh = m_lightProgram->UploadMesh("Assets/sphere.obj", new sTextureUsage(false, false, false));
+	{
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::translate(i_ModelMat, m_lightPosition);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
+		i_lightMesh->SetModelMat(i_ModelMat);
+	}
+	m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -145,20 +156,31 @@ void cMyApplication::MainLoopFunc()
 	}
 
 	m_displayProgram->RenderShadowMap(m_lightPosition,
-		glm::vec3(m_displayProgram->m_meshes[0]->m_modelMat[3]),
-		45.0f, 0.1f, 10.0f);
+		glm::vec3(0.0f),
+		120.0f, 0.1f, 10.0f);
+	
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glViewport(0, 0, m_windowWidth, m_windowHeight);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glViewport(0, 0, m_windowWidth, m_windowHeight);
+		m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
+		glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
+		glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
+		m_displayProgram->SetCameraPosition(i_cameraPos);
+		m_displayProgram->SetLightingPosition(m_lightPosition);
 
-	m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
-	glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
-	glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
-	m_displayProgram->SetCameraPosition(i_cameraPos);
-	m_displayProgram->SetLightingPosition(m_lightPosition);
+		m_displayProgram->DrawCall();
+	}
 
-	m_displayProgram->DrawCall();
+	{
+		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::translate(i_ModelMat, m_lightPosition);
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.02f));
+		m_lightProgram->m_meshes[0]->SetModelMat(i_ModelMat);
+		m_lightProgram->SetMVPMatrix(m_viewMat, VIEW);
+		m_lightProgram->DrawCall();
+	}
 	
 }
 

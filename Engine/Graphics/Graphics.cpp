@@ -432,6 +432,8 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 
 	// bind depth texture to fbo
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_shadowMapInfo->m_texture, 0);
+	glDrawBuffer(GL_NONE); // No color attachment needed
+	glReadBuffer(GL_NONE); // No read buffer needed
 
 	// unbind frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -448,13 +450,14 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	delete i_vertexShader;
 	delete i_fragmentShader;
 
-	glUseProgram(m_shaderProgram);
-	m_shadowMapInfo->m_shadowMapTexPosition = glGetUniformLocation(m_shaderProgram, "shadow_map");
-
 	glUseProgram(m_shadowMapInfo->m_shadowShaderProgram);
 	m_shadowMapInfo->m_shadowShaderModelMat = glGetUniformLocation(m_shadowMapInfo->m_shadowShaderProgram, "model");
 	m_shadowMapInfo->m_shadowShaderViewMat = glGetUniformLocation(m_shadowMapInfo->m_shadowShaderProgram, "view");
 	m_shadowMapInfo->m_shadowShaderProjMat = glGetUniformLocation(m_shadowMapInfo->m_shadowShaderProgram, "projection");
+	
+	glUseProgram(m_shaderProgram);
+	m_shadowMapInfo->m_shadowMapTexPosition = glGetUniformLocation(m_shaderProgram, "shadow_map");
+	
 }
 
 GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, 
@@ -470,15 +473,19 @@ GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec
 	glUseProgram(m_shadowMapInfo->m_shadowShaderProgram);
 
 	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	
 	glm::mat4 i_viewMatrix = glm::lookAt(i_lightLocation, i_targetLocation, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 i_projMatrix = glm::perspective(glm::radians(i_lightConeAgnle), 
-		(float)m_shadowMapInfo->m_textureWidth / (float)m_shadowMapInfo->m_textureHeight,
+		1.0f,
 		i_lightingNearPlane, i_lightingFarPlane);
-
-	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat, 1, GL_FALSE, glm::value_ptr(i_viewMatrix));
-	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat, 1, GL_FALSE, glm::value_ptr(i_projMatrix));
+	glm::mat4 i_lightSpaceVP = i_projMatrix * i_viewMatrix;
+	
+	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat,
+		1, GL_FALSE, glm::value_ptr(i_viewMatrix));
+	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat,
+		1, GL_FALSE, glm::value_ptr(i_projMatrix));
 
 	glBindVertexArray(m_VAO);
 	for (cMesh* i_mesh : m_meshes) {
@@ -487,17 +494,18 @@ GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec
 	}
 	glBindVertexArray(0);
 
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glUseProgram(m_shaderProgram);
 	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE, 
-		glm::value_ptr(i_projMatrix * i_viewMatrix));
+		glm::value_ptr(i_lightSpaceVP));
 
 	for (cMesh* i : m_meshes) {
 		i->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
 	}
-
 	return m_shadowMapInfo->m_texture;
+
 }
 
 GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightDirection,
