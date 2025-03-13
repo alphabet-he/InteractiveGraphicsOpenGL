@@ -460,8 +460,42 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	
 }
 
-GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, 
+GLuint cVertexShaderProgram::RenderSpotLightShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, 
 	float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane)
+{
+	glm::mat4 i_viewMatrix, i_projMatrix;
+	ComputeLightViewProjMat(i_lightLocation, i_targetLocation,
+		i_lightConeAgnle, i_lightingNearPlane, i_lightingFarPlane,
+		i_viewMatrix, i_projMatrix);
+	return RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+}
+
+GLuint cVertexShaderProgram::RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
+	float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane)
+{
+	glm::mat4 i_viewMatrix, i_projMatrix;
+	ComputeLightViewProjMat(i_lightDirection,
+		i_orthoSize, i_lightingNearPlane, i_lightingFarPlane,
+		i_viewMatrix, i_projMatrix);
+	return RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+}
+
+void cVertexShaderProgram::ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane, glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix)
+{
+	o_viewMatrix = glm::lookAt(i_lightLocation, i_targetLocation, glm::vec3(0.0f, 1.0f, 0.0f));
+	o_projMatrix = glm::perspective(
+		glm::radians(i_lightConeAgnle),
+		1.0f,
+		i_lightingNearPlane, i_lightingFarPlane);
+}
+
+void cVertexShaderProgram::ComputeLightViewProjMat(glm::vec3 i_lightDirection, float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane, glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix)
+{
+	o_viewMatrix = glm::lookAt(-glm::normalize(i_lightDirection) * 10.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	o_projMatrix = glm::ortho(-i_orthoSize, i_orthoSize, -i_orthoSize, i_orthoSize, i_lightingNearPlane, i_lightingFarPlane);
+}
+
+GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatrix, glm::mat4 i_projMatrix)
 {
 	if (!m_shadowMapInfo) {
 		std::cout << "ERROR: Shadow map not initialized!" << std::endl;
@@ -469,19 +503,14 @@ GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
-	
+
 	glUseProgram(m_shadowMapInfo->m_shadowShaderProgram);
 
 	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	
-	glm::mat4 i_viewMatrix = glm::lookAt(i_lightLocation, i_targetLocation, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 i_projMatrix = glm::perspective(glm::radians(i_lightConeAgnle), 
-		1.0f,
-		i_lightingNearPlane, i_lightingFarPlane);
 	glm::mat4 i_lightSpaceVP = i_projMatrix * i_viewMatrix;
-	
+
 	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat,
 		1, GL_FALSE, glm::value_ptr(i_viewMatrix));
 	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat,
@@ -494,42 +523,16 @@ GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightLocation, glm::vec
 	}
 	glBindVertexArray(0);
 
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glUseProgram(m_shaderProgram);
-	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE, 
+	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE,
 		glm::value_ptr(i_lightSpaceVP));
 
 	for (cMesh* i : m_meshes) {
 		i->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
 	}
 	return m_shadowMapInfo->m_texture;
-
-}
-
-GLuint cVertexShaderProgram::RenderShadowMap(glm::vec3 i_lightDirection,
-	float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane)
-{
-	if (!m_shadowMapInfo) {
-		std::cout << "ERROR: Shadow map not initialized!" << std::endl;
-		return 0;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
-
-	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glm::mat4 i_viewMatrix = glm::lookAt(-glm::normalize(i_lightDirection) * 10.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 i_projMatrix = glm::ortho(-i_orthoSize, i_orthoSize, -i_orthoSize, i_orthoSize, i_lightingNearPlane, i_lightingFarPlane);
-
-	SetMVPMatrix(i_viewMatrix, VIEW);
-	SetMVPMatrix(i_projMatrix, PROJECTION);
-	DrawCall();
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	return m_screenTextureInfo->m_texture;
 }
 
 cEnvironmentShaderProgram::cEnvironmentShaderProgram()

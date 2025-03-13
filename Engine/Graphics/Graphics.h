@@ -149,11 +149,21 @@ public:
 
 	void InitializeShadowMap(uint16_t i_width, uint16_t i_height);
 	// spot light
-	GLuint RenderShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
+	GLuint RenderSpotLightShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
 		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane);
 	// directional light
-	GLuint RenderShadowMap(glm::vec3 i_lightDirection,
+	GLuint RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
 		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane);
+
+private:
+	// Helper functions
+	void ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
+		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane,
+		glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix);
+	void ComputeLightViewProjMat(glm::vec3 i_lightDirection,
+		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane,
+		glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix);
+	GLuint RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatrix, glm::mat4 i_projMatrix);
 };
 
 class cEnvironmentShaderProgram: public cVertexShaderProgram {

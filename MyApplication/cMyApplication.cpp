@@ -155,7 +155,7 @@ void cMyApplication::MainLoopFunc()
 		}
 	}
 
-	m_displayProgram->RenderShadowMap(m_lightPosition,
+	m_displayProgram->RenderSpotLightShadowMap(m_lightPosition,
 		glm::vec3(0.0f),
 		120.0f, 0.1f, 10.0f);
 	
