@@ -99,7 +99,7 @@ struct sScreenTextureInfo {
 struct sShadowMapInfo {
 	GLuint m_FBO, m_texture;
 	uint16_t m_textureWidth, m_textureHeight;
-	GLuint m_shaderProgram;
+	GLuint m_shadowShaderProgram, m_shadowShaderViewMat, m_shadowShaderProjMat, m_shadowShaderModelMat;
 	GLuint m_shadowMapTexPosition;
 };
 

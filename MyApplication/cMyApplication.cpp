@@ -54,7 +54,7 @@ void cMyApplication::CustomInitialization()
 
 	m_lightPosition = glm::vec3(1.2f, 2.0f, 1.5f);
 
-	m_displayProgram->InitializeShadowMap(m_windowWidth, m_windowHeight);
+	m_displayProgram->InitializeShadowMap(1024, 1024);
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
