@@ -41,6 +41,30 @@ void cMesh::UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_te
 	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
 }
 
+void cMesh::UploadNormalMap(std::string i_textureFilePath)
+{
+	std::vector<unsigned char> image;
+	unsigned width, height;
+	unsigned error = lodepng::decode(image, width, height, i_textureFilePath); // use loadpng to decode it
+	if (error) {
+		std::cout << "LodePNG decode error " << error << ": " << lodepng_error_text(error) << std::endl;
+	}
+
+	// upload the texture to OpenGL
+	GLuint TexInt;
+	glGenTextures(1, &TexInt);
+	glBindTexture(GL_TEXTURE_2D, TexInt);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+	// set paramaters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, NORMAL_MAP));
+}
+
 cVertexShaderProgram::cVertexShaderProgram()
 {
 	//TODO: Abstract an actual parent class
@@ -78,6 +102,7 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 	if (m_vertexBufferStruct->hasAttribute(POSITION))  i_stride += 3 * sizeof(GLfloat);
 	if (m_vertexBufferStruct->hasAttribute(NORMAL))    i_stride += 3 * sizeof(GLfloat);
 	if (m_vertexBufferStruct->hasAttribute(TEXCOORD))  i_stride += 2 * sizeof(GLfloat);
+	if (m_vertexBufferStruct->hasAttribute(TANGENT))  i_stride += 3 * sizeof(GLfloat);
 
 	// set attributes
 	size_t offset = 0;
@@ -99,6 +124,12 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 		i_attributeIndex++;
 		offset += 2;
 	}
+	if (m_vertexBufferStruct->hasAttribute(TANGENT)) {
+		glVertexAttribPointer(i_attributeIndex, 3, GL_FLOAT, GL_FALSE, i_stride, (void*)(offset * sizeof(GLfloat)));
+		glEnableVertexAttribArray(i_attributeIndex);
+		i_attributeIndex++;
+		offset += 3;
+	}
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -113,6 +144,27 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 	std::vector<GLfloat> i_vertices;
 
 	for (int i = 0; i < (int)i_mesh->m_cyMesh->NF(); i++) {
+
+		cy::Vec3f i_tangent, i_bitangent;
+		if (m_vertexBufferStruct->hasAttribute(TANGENT)) {
+			unsigned int vInd[3], uvInd[3];
+			for (int j = 0; j < 3; j++) {
+				vInd[j] = i_mesh->m_cyMesh->F(i).v[j];
+				uvInd[j] = i_mesh->m_cyMesh->FT(i).v[j];
+			}
+
+			cy::Vec3f i_edge1 = i_mesh->m_cyMesh->V(vInd[1]) - i_mesh->m_cyMesh->V(vInd[0]);
+			cy::Vec3f i_edge2 = i_mesh->m_cyMesh->V(vInd[2]) - i_mesh->m_cyMesh->V(vInd[0]);
+			cy::Vec3f i_deltaUV1 = i_mesh->m_cyMesh->VT(uvInd[1]) - i_mesh->m_cyMesh->VT(uvInd[0]);
+			cy::Vec3f i_deltaUV2 = i_mesh->m_cyMesh->VT(uvInd[2]) - i_mesh->m_cyMesh->VT(uvInd[0]);
+
+			float f = 1.0f / (i_deltaUV1.x * i_deltaUV2.y - i_deltaUV2.x * i_deltaUV1.y);
+			i_tangent = f * (i_deltaUV2.y * i_edge1 - i_deltaUV1.y * i_edge2);
+			i_bitangent = f * (-i_deltaUV2.x * i_edge1 + i_deltaUV1.x * i_edge2);
+			i_tangent.Normalize();
+			i_bitangent.Normalize();
+		}
+
 		for (int j = 0; j < 3; j++) {
 			if (m_vertexBufferStruct->hasAttribute(POSITION)) {
 				unsigned int i_vertexInd = i_mesh->m_cyMesh->F(i).v[j];
@@ -132,6 +184,12 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 				unsigned int i_uvInd = i_mesh->m_cyMesh->FT(i).v[j];
 				i_vertices.push_back(i_mesh->m_cyMesh->VT(i_uvInd).x);
 				i_vertices.push_back(1.0f - i_mesh->m_cyMesh->VT(i_uvInd).y);
+			}
+
+			if (m_vertexBufferStruct->hasAttribute(TANGENT)) {
+				i_vertices.push_back(i_tangent.x);
+				i_vertices.push_back(i_tangent.y);
+				i_vertices.push_back(i_tangent.z);
 			}
 		}
 	}
@@ -224,6 +282,7 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
 	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
 	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
+	m_textureNormalMap = glGetUniformLocation(m_shaderProgram, "texture_normalMap");
 
 	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
 	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
@@ -293,6 +352,10 @@ void cVertexShaderProgram::DrawCall()
 			case SKYBOX_REFLECTION:
 				glBindTexture(GL_TEXTURE_CUBE_MAP, i_texBinding.first);
 				glUniform1i(m_textureSkyboxReflection, i_textureUnit);
+				break;
+			case NORMAL_MAP:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
+				glUniform1i(m_textureNormalMap, i_textureUnit);
 				break;
 			case SCREEN_TEXTURE:
 				if (m_screenTextureInfo) {

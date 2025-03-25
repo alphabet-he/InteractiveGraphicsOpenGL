@@ -13,31 +13,21 @@ void cMyApplication::CustomInitialization()
 {
 
 	// display vertex buffer
-	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, false);
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, true);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	m_displayProgram->LinkShaders("Assets/shader/ShadowVertexShader.glsl", "Assets/shader/ShadowFragmentShader.glsl");
+	m_displayProgram->LinkShaders("Assets/shader/NormalMapVertexShader.glsl", "Assets/shader/NormalMapFragmentShader.glsl");
 	
-	// set teapot
-	cMesh* i_teapotMesh = m_displayProgram->UploadMesh("Assets/teapot/teapot.obj", new sTextureUsage(false, false, false));
-	// set model matrix
-	{
-		cy::Vec3<float> i_centerCy = (i_teapotMesh->m_cyMesh->GetBoundMax() + i_teapotMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(0, i_centerCy.y, i_centerCy.z);
-		glm::mat4 i_ModelMat = glm::mat4(1.0f);
-		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(-90.0f), glm::vec3(1, 0, 0));
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
-		i_teapotMesh->SetModelMat(i_ModelMat);
-	}
 	// plane
 	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
 	{
+		i_planeMesh->m_cyMesh->ComputeBoundingBox();
 		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(0, i_centerCy.y, i_centerCy.z);
+		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
 		glm::mat4 i_ModelMat = glm::mat4(1.0f);
+		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(90.0f), glm::vec3(1, 0, 0));
 		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(2.0f));
 		i_planeMesh->SetModelMat(i_ModelMat);
+		i_planeMesh->UploadNormalMap("Assets/teapot_normal.png");
 	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
@@ -52,17 +42,15 @@ void cMyApplication::CustomInitialization()
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	m_lightPosition = glm::vec3(1.2f, 2.5f, 1.2f);
+	m_lightPosition = glm::vec3(0.8f, 1.2f, 1.0f);
 
-	m_displayProgram->InitializeShadowMap(2048, 2048);
-
-	m_lightProgram = new cVertexShaderProgram(i_displayBufferStruct);
+	m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, false, false));
 	m_lightProgram->LinkShaders("Assets/shader/StandardVertexShader.glsl", "Assets/shader/StandardFragmentShader.glsl");
 	cMesh* i_lightMesh = m_lightProgram->UploadMesh("Assets/sphere.obj", new sTextureUsage(false, false, false));
 	{
 		glm::mat4 i_ModelMat = glm::mat4(1.0f);
 		i_ModelMat = glm::translate(i_ModelMat, m_lightPosition);
-		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.1f));
+		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.05f));
 		i_lightMesh->SetModelMat(i_ModelMat);
 	}
 	m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
@@ -154,10 +142,6 @@ void cMyApplication::MainLoopFunc()
 			}
 		}
 	}
-
-	m_displayProgram->RenderSpotLightShadowMap(m_lightPosition,
-		glm::vec3(0.0f),
-		120.0f, 0.1f, 10.0f);
 	
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

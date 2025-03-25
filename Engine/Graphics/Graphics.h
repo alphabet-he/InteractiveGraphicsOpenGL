@@ -8,7 +8,8 @@ enum eTextureUsageFlags {
 	SPECULAR = 1 << 2,  // 0100
 	SKYBOX_REFLECTION = 1 << 3, // 1000
 	SCREEN_TEXTURE = 1 << 4,
-	SHADOW_MAP = 1 << 5
+	SHADOW_MAP = 1 << 5,
+	NORMAL_MAP = 1 << 6
 };
 
 struct sTextureUsage {
@@ -50,6 +51,7 @@ public:
 		m_modelMat = glm::mat4(1.0f);
 	}
 	void UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
+	void UploadNormalMap(std::string i_textureFilePath);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
 		m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_tex, i_flag));
 	};
@@ -60,7 +62,8 @@ public:
 enum eVertexAttributeFlags {
 	POSITION = 1 << 0, // 0001
 	NORMAL = 1 << 1, // 0010
-	TEXCOORD = 1 << 2  // 0100
+	TEXCOORD = 1 << 2,  // 0100
+	TANGENT = 1 << 3
 };
 
 struct sVertexBufferStruct {
@@ -69,11 +72,12 @@ private:
 	uint8_t m_attributeMask;
 
 public:
-	sVertexBufferStruct(bool b_position, bool b_normal, bool b_uvCoord) {
+	sVertexBufferStruct(bool b_position, bool b_normal, bool b_uvCoord, bool b_tangent) {
 		m_attributeMask = 0;
 		if (b_position) m_attributeMask |= POSITION;
 		if (b_normal)   m_attributeMask |= NORMAL;
 		if (b_uvCoord)  m_attributeMask |= TEXCOORD;
+		if (b_tangent)  m_attributeMask |= TANGENT;
 	}
 
 	// Check if an attribute is enabled
@@ -121,7 +125,7 @@ private:
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection;
+	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_textureNormalMap;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
