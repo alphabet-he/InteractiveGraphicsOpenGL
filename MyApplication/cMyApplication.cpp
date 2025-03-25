@@ -15,7 +15,11 @@ void cMyApplication::CustomInitialization()
 	// display vertex buffer
 	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, true);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	m_displayProgram->LinkShaders("Assets/shader/NormalMapVertexShader.glsl", "Assets/shader/NormalMapFragmentShader.glsl");
+	m_displayProgram->SetTessellationShader("Assets/shader/TessellationVertexShader.glsl", 
+		"Assets/shader/TessellationControlShader.glsl",
+		"Assets/shader/TessellationEvaluationShader.glsl",
+		"Assets/shader/TessellationFragmentShader.glsl");
+	m_displayProgram->InitializeGeometryShaderProgram();
 	
 	// plane
 	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
@@ -28,6 +32,7 @@ void cMyApplication::CustomInitialization()
 		i_ModelMat = glm::translate(i_ModelMat, -i_center);
 		i_planeMesh->SetModelMat(i_ModelMat);
 		i_planeMesh->UploadPNGTexture(NORMAL_MAP, "Assets/teapot_normal.png");
+		i_planeMesh->UploadPNGTexture(DISPLACEMENT_MAP, "Assets/teapot_disp.png");
 	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
@@ -55,6 +60,9 @@ void cMyApplication::CustomInitialization()
 		i_lightMesh->SetModelMat(i_ModelMat);
 	}
 	m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+
+	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+	std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)

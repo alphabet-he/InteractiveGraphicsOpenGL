@@ -131,12 +131,15 @@ private:
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_textureNormalMap, m_textureDisplacementMap;
+	GLuint m_textureKa, m_textureKd, m_textureKs;
+	GLuint m_textureSkyboxReflection, m_textureNormalMap, m_textureDisplacementMap;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
 
 	glm::mat4 m_viewMat, m_projMat;
+
+	bool b_useTessellation = false;
 
 public:
 	cVertexShaderProgram();
@@ -146,6 +149,11 @@ public:
 	virtual cMesh* UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
 
 	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
+
+	void SetTessellationShader(char const* i_vertexShaderFilename,
+		char const* i_tessellationControlShaderFilename,
+		char const* i_tessellationEvaluationShaderFilename,
+		char const* i_fragmentShaderFilename);
 
 	void SetMVPMatrix(glm::mat4 i_matrix, eMVPMatrixFlags i_matrixName);
 
@@ -172,6 +180,8 @@ public:
 
 private:
 	// Helper functions
+	void ResetShaderProgram();
+	void GetShaderUniforms();
 	void ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
 		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane,
 		glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix);

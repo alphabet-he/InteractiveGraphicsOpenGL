@@ -13,6 +13,11 @@ void iApplication::Initialize()
 	// initialize glfw
 	glfwInit();
 
+	// set profile
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	// create window
 	m_applicationWindow = glfwCreateWindow(m_windowWidth, m_windowHeight, m_windowTitle.c_str(), nullptr, nullptr);
 	glfwMakeContextCurrent(m_applicationWindow);
@@ -21,6 +26,7 @@ void iApplication::Initialize()
 
 	// initialize glew
 	glewInit();
+	glewExperimental = GL_TRUE;
 
 	CustomInitialization();
 }

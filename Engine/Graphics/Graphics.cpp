@@ -214,25 +214,7 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 
 void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
 {
-	// get the number of attached shaders
-	GLint shaderCount = 0;
-	glGetProgramiv(m_shaderProgram, GL_ATTACHED_SHADERS, &shaderCount);
-
-	// detach all shaders
-	if (shaderCount > 0) {
-		GLuint* shaders = new GLuint[shaderCount];
-		glGetAttachedShaders(m_shaderProgram, shaderCount, nullptr, shaders);
-
-		// Detach and delete each shader
-		for (int i = 0; i < shaderCount; i++) {
-			glDetachShader(m_shaderProgram, shaders[i]);
-			glDeleteShader(shaders[i]); // Free GPU memory
-		}
-
-		delete[] shaders; // Free allocated memory
-	}
-
-	glDeleteProgram(m_shaderProgram);
+	ResetShaderProgram();
 
 	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
@@ -243,22 +225,47 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	glAttachShader(m_shaderProgram, i_fragmentShader->GetID());
 	glLinkProgram(m_shaderProgram);
 
-	glUseProgram(m_shaderProgram);
-	m_textureKa = glGetUniformLocation(m_shaderProgram, "texture_Ka");
-	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
-	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
-	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
-	m_textureNormalMap = glGetUniformLocation(m_shaderProgram, "texture_normalMap");
+	delete i_vertexShader;
+	delete i_fragmentShader;
 
-	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
-	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
-	m_shaderProjectionMat = glGetUniformLocation(m_shaderProgram, "projection");
+	GetShaderUniforms();
+}
 
-	m_shaderCameraPosition = glGetUniformLocation(m_shaderProgram, "camera_position");
-	m_shaderLightingPosition = glGetUniformLocation(m_shaderProgram, "light_position");
+void cVertexShaderProgram::SetTessellationShader(char const* i_vertexShaderFilename, char const* i_tessellationControlShaderFilename, char const* i_tessellationEvaluationShaderFilename, char const* i_fragmentShaderFilename)
+{
+	ResetShaderProgram();
+
+	b_useTessellation = true;
+
+	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+	cy::GLSLShader* i_tcs = new cy::GLSLShader();
+	cy::GLSLShader* i_tes = new cy::GLSLShader();
+	i_vertexShader->CompileFile(i_vertexShaderFilename, GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile(i_fragmentShaderFilename, GL_FRAGMENT_SHADER);
+	i_tcs->CompileFile(i_tessellationControlShaderFilename, GL_TESS_CONTROL_SHADER);
+	i_tes->CompileFile(i_tessellationEvaluationShaderFilename, GL_TESS_EVALUATION_SHADER);
+	m_shaderProgram = glCreateProgram();
+	glAttachShader(m_shaderProgram, i_vertexShader->GetID());
+	glAttachShader(m_shaderProgram, i_tcs->GetID());
+	glAttachShader(m_shaderProgram, i_tes->GetID());
+	glAttachShader(m_shaderProgram, i_fragmentShader->GetID());
+	glLinkProgram(m_shaderProgram);
 
 	delete i_vertexShader;
 	delete i_fragmentShader;
+	delete i_tcs;
+	delete i_tes;
+
+	GLint success = 0;
+	glGetProgramiv(m_shaderProgram, GL_LINK_STATUS, &success);
+	if (!success) {
+		char infoLog[1024];
+		glGetProgramInfoLog(m_shaderProgram, 1024, NULL, infoLog);
+		std::cerr << "Shader program link error:\n" << infoLog << std::endl;
+	}
+
+	GetShaderUniforms();
 }
 
 void cVertexShaderProgram::SetMVPMatrix(glm::mat4 i_matrix, eMVPMatrixFlags i_matrixName)
@@ -325,6 +332,10 @@ void cVertexShaderProgram::DrawCall()
 				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
 				glUniform1i(m_textureNormalMap, i_textureUnit);
 				break;
+			case DISPLACEMENT_MAP:
+				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
+				glUniform1i(m_textureDisplacementMap, i_textureUnit);
+				break;
 			case SCREEN_TEXTURE:
 				if (m_screenTextureInfo) {
 					glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
@@ -353,7 +364,13 @@ void cVertexShaderProgram::DrawCall()
 		}
 
 		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
-		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+		if (b_useTessellation) {
+			glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
+			glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
+		}
+		else {
+			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+		}
 	}
 	glBindVertexArray(0);
 }
@@ -362,16 +379,47 @@ void cVertexShaderProgram::InitializeGeometryShaderProgram()
 {
 	m_geometryShaderProgram = new sGeometryShaderProgram();
 
-	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
-	cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
-	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
-	i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
-	i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
-	i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
-	m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
-	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
-	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_geometryShader->GetID());
-	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_fragmentShader->GetID());
+	if (b_useTessellation) {
+		cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+		cy::GLSLShader* i_tcs = new cy::GLSLShader();
+		cy::GLSLShader* i_tes = new cy::GLSLShader();
+		cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
+		cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+		i_vertexShader->CompileFile("Assets/shader/StandardTessellationVertexShader.glsl", GL_VERTEX_SHADER);
+		i_tcs->CompileFile("Assets/shader/StandardTessellationControlShader.glsl", GL_TESS_CONTROL_SHADER);
+		i_tes->CompileFile("Assets/shader/StandardTessellationEvaluationShader.glsl", GL_TESS_EVALUATION_SHADER);
+		i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
+		i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+		m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_tcs->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_tes->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_geometryShader->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_fragmentShader->GetID());
+
+		delete i_vertexShader;
+		delete i_tcs;
+		delete i_tes;
+		delete i_fragmentShader;
+		delete i_geometryShader;
+	}
+	else {
+		cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+		cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
+		cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+		i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
+		i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
+		i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+		m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_geometryShader->GetID());
+		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_fragmentShader->GetID());
+
+		delete i_vertexShader;
+		delete i_fragmentShader;
+		delete i_geometryShader;
+	}
+
 	glLinkProgram(m_geometryShaderProgram->m_shaderProgram);
 
 	m_geometryShaderProgram->m_shaderModelMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "model");
@@ -392,13 +440,17 @@ void cVertexShaderProgram::GeometryDrawCall()
 	glUniformMatrix4fv(m_geometryShaderProgram->m_shaderViewMat, 1, GL_FALSE, glm::value_ptr(m_viewMat));
 	glUniformMatrix4fv(m_geometryShaderProgram->m_shaderProjectionMat, 1, GL_FALSE, glm::value_ptr(m_projMat));
 
-	glDisable(GL_CULL_FACE);     // maybe your triangle winding is inconsistent
-	glEnable(GL_DEPTH_TEST);     // so lines respect depth
-	glLineWidth(2.0f);           // make lines more visible
+	glLineWidth(2.0f);
 
 	for (cMesh* i_mesh : m_meshes) {
 		glUniformMatrix4fv(m_geometryShaderProgram->m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
-		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+		if (b_useTessellation) {
+			glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
+			glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
+		}
+		else {
+			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+		}
 	}
 	glBindVertexArray(0);
 }
@@ -554,6 +606,49 @@ GLuint cVertexShaderProgram::RenderDirectionalLightShadowMap(glm::vec3 i_lightDi
 		i_orthoSize, i_lightingNearPlane, i_lightingFarPlane,
 		i_viewMatrix, i_projMatrix);
 	return RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+}
+
+void cVertexShaderProgram::ResetShaderProgram()
+{
+	// get the number of attached shaders
+	GLint shaderCount = 0;
+	glGetProgramiv(m_shaderProgram, GL_ATTACHED_SHADERS, &shaderCount);
+
+	// detach all shaders
+	if (shaderCount > 0) {
+		GLuint* shaders = new GLuint[shaderCount];
+		glGetAttachedShaders(m_shaderProgram, shaderCount, nullptr, shaders);
+
+		// Detach and delete each shader
+		for (int i = 0; i < shaderCount; i++) {
+			glDetachShader(m_shaderProgram, shaders[i]);
+			glDeleteShader(shaders[i]); // Free GPU memory
+		}
+
+		delete[] shaders; // Free allocated memory
+	}
+
+	glDeleteProgram(m_shaderProgram);
+
+	b_useTessellation = false;
+}
+
+void cVertexShaderProgram::GetShaderUniforms()
+{
+	glUseProgram(m_shaderProgram);
+	m_textureKa = glGetUniformLocation(m_shaderProgram, "texture_Ka");
+	m_textureKd = glGetUniformLocation(m_shaderProgram, "texture_Kd");
+	m_textureKs = glGetUniformLocation(m_shaderProgram, "texture_Ks");
+	m_textureSkyboxReflection = glGetUniformLocation(m_shaderProgram, "skybox");
+	m_textureNormalMap = glGetUniformLocation(m_shaderProgram, "texture_normalMap");
+	m_textureDisplacementMap = glGetUniformLocation(m_shaderProgram, "displacementMap");
+
+	m_shaderModelMat = glGetUniformLocation(m_shaderProgram, "model");
+	m_shaderViewMat = glGetUniformLocation(m_shaderProgram, "view");
+	m_shaderProjectionMat = glGetUniformLocation(m_shaderProgram, "projection");
+
+	m_shaderCameraPosition = glGetUniformLocation(m_shaderProgram, "camera_position");
+	m_shaderLightingPosition = glGetUniformLocation(m_shaderProgram, "light_position");
 }
 
 void cVertexShaderProgram::ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane, glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix)
