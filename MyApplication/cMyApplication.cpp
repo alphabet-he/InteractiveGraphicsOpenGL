@@ -81,6 +81,19 @@ void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int 
 			m_input_ctrlKey = false;
 		}
 	}
+
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+		b_showingWireframe = !b_showingWireframe;
+	}
+
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+		m_tessellationLevel = std::max(1, m_tessellationLevel - 1);
+		m_displayProgram->SetTessellationLevel(m_tessellationLevel);
+	}
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+		m_tessellationLevel = std::min(10, m_tessellationLevel + 1);
+		m_displayProgram->SetTessellationLevel(m_tessellationLevel);
+	}
 }
 
 void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -164,7 +177,9 @@ void cMyApplication::MainLoopFunc()
 		m_displayProgram->SetLightingPosition(m_lightPosition);
 
 		m_displayProgram->DrawCall();
-		m_displayProgram->GeometryDrawCall();
+		if (b_showingWireframe) {
+			m_displayProgram->GeometryDrawCall();
+		}
 	}
 
 	{

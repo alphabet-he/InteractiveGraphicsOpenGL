@@ -33,5 +33,8 @@ private:
 	glm::mat4 m_projectionMat;
 
 	glm::vec3 m_lightPosition;
+
+	bool b_showingWireframe = false;
+	int m_tessellationLevel = 4;
 };
 

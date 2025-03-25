@@ -110,6 +110,7 @@ struct sShadowMapInfo {
 struct sGeometryShaderProgram {
 	GLuint m_shaderProgram;
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
+	GLuint m_shaderTessLevelPosition;
 };
 
 class cVertexShaderProgram {
@@ -134,6 +135,7 @@ private:
 	GLuint m_textureKa, m_textureKd, m_textureKs;
 	GLuint m_textureSkyboxReflection, m_textureNormalMap, m_textureDisplacementMap;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
+	GLuint m_shaderTessLevelPosition;
 
 	size_t m_bufferSize;
 
@@ -159,6 +161,8 @@ public:
 
 	void SetCameraPosition(glm::vec3 i_cameraPos);
 	void SetLightingPosition(glm::vec3 i_lightPos);
+
+	void SetTessellationLevel(int i_level);
 
 	virtual void DrawCall();
 

@@ -299,6 +299,21 @@ void cVertexShaderProgram::SetLightingPosition(glm::vec3 i_lightPos)
 	glUniform3f(m_shaderLightingPosition, i_lightPos.x, i_lightPos.y, i_lightPos.z);
 }
 
+void cVertexShaderProgram::SetTessellationLevel(int i_level)
+{
+	if (!b_useTessellation) {
+		std::cout << "ERROR: Tessellation not used in this program!" << std::endl;
+		return;
+	}
+
+	glUseProgram(m_shaderProgram);
+	glUniform1i(m_shaderTessLevelPosition, i_level);
+	if (m_geometryShaderProgram) {
+		glUseProgram(m_geometryShaderProgram->m_shaderProgram);
+		glUniform1i(m_geometryShaderProgram->m_shaderTessLevelPosition, i_level);
+	}
+}
+
 void cVertexShaderProgram::DrawCall()
 {
 	glUseProgram(m_shaderProgram);
@@ -402,6 +417,10 @@ void cVertexShaderProgram::InitializeGeometryShaderProgram()
 		delete i_tes;
 		delete i_fragmentShader;
 		delete i_geometryShader;
+
+		glLinkProgram(m_geometryShaderProgram->m_shaderProgram);
+
+		m_geometryShaderProgram->m_shaderTessLevelPosition = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "tessellation_level");
 	}
 	else {
 		cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
@@ -418,9 +437,9 @@ void cVertexShaderProgram::InitializeGeometryShaderProgram()
 		delete i_vertexShader;
 		delete i_fragmentShader;
 		delete i_geometryShader;
-	}
 
-	glLinkProgram(m_geometryShaderProgram->m_shaderProgram);
+		glLinkProgram(m_geometryShaderProgram->m_shaderProgram);
+	}
 
 	m_geometryShaderProgram->m_shaderModelMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "model");
 	m_geometryShaderProgram->m_shaderViewMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "view");
@@ -649,6 +668,7 @@ void cVertexShaderProgram::GetShaderUniforms()
 
 	m_shaderCameraPosition = glGetUniformLocation(m_shaderProgram, "camera_position");
 	m_shaderLightingPosition = glGetUniformLocation(m_shaderProgram, "light_position");
+	m_shaderTessLevelPosition = glGetUniformLocation(m_shaderProgram, "tessellation_level");
 }
 
 void cVertexShaderProgram::ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane, glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix)
