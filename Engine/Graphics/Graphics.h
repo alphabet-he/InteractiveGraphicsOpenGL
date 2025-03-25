@@ -9,7 +9,8 @@ enum eTextureUsageFlags {
 	SKYBOX_REFLECTION = 1 << 3, // 1000
 	SCREEN_TEXTURE = 1 << 4,
 	SHADOW_MAP = 1 << 5,
-	NORMAL_MAP = 1 << 6
+	NORMAL_MAP = 1 << 6,
+	DISPLACEMENT_MAP = 1 << 7
 };
 
 struct sTextureUsage {
@@ -50,8 +51,7 @@ public:
 		m_textureBinding.clear();
 		m_modelMat = glm::mat4(1.0f);
 	}
-	void UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir);
-	void UploadNormalMap(std::string i_textureFilePath);
+	void UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
 		m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_tex, i_flag));
 	};
@@ -107,6 +107,11 @@ struct sShadowMapInfo {
 	GLuint m_shadowMapTexPosition;
 };
 
+struct sGeometryShaderProgram {
+	GLuint m_shaderProgram;
+	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
+};
+
 class cVertexShaderProgram {
 
 public:
@@ -119,16 +124,19 @@ protected:
 
 	sScreenTextureInfo* m_screenTextureInfo = nullptr;
 	sShadowMapInfo* m_shadowMapInfo = nullptr;
+	sGeometryShaderProgram* m_geometryShaderProgram = nullptr;
 
 private:
 	size_t m_VBOOffset;
 	size_t m_VBOVerticeOffset;
 	GLfloat* m_mappedBuffer = nullptr;
 
-	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_textureNormalMap;
+	GLuint m_textureKa, m_textureKd, m_textureKs, m_textureSkyboxReflection, m_textureNormalMap, m_textureDisplacementMap;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
 
 	size_t m_bufferSize;
+
+	glm::mat4 m_viewMat, m_projMat;
 
 public:
 	cVertexShaderProgram();
@@ -145,6 +153,9 @@ public:
 	void SetLightingPosition(glm::vec3 i_lightPos);
 
 	virtual void DrawCall();
+
+	void InitializeGeometryShaderProgram();
+	void GeometryDrawCall();
 
 	void InitializeScreenTexture(uint16_t i_width, uint16_t i_height);
 	GLuint RenderToScreenTexture(glm::vec3 i_cameraLocation, 

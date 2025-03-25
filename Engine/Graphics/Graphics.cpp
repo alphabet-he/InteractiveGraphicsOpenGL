@@ -1,47 +1,6 @@
 #include "Graphics.h"
 
-void cMesh::UploadADSTexture(eTextureUsageFlags i_textureUsage, std::string i_textureDir)
-{
-	const char* i_textureFileName;
-	switch (i_textureUsage)
-	{
-	case AMBIENT:
-		i_textureFileName = m_cyMesh->M(0).map_Ka.data;
-		break;
-	case DIFFUSE:
-		i_textureFileName = m_cyMesh->M(0).map_Kd.data;
-		break;
-	case SPECULAR:
-		i_textureFileName = m_cyMesh->M(0).map_Ks.data;
-		break;
-	default:
-		i_textureFileName = "";
-		break;
-	}
-	std::string i_texture = i_textureDir + std::string(i_textureFileName);
-	std::vector<unsigned char> image;
-	unsigned width, height;
-	unsigned error = lodepng::decode(image, width, height, i_texture); // use loadpng to decode it
-	if (error) {
-		std::cout << "LodePNG decode error " << error << ": " << lodepng_error_text(error) << std::endl;
-	}
-
-	// upload the texture to OpenGL
-	GLuint TexInt;
-	glGenTextures(1, &TexInt);
-	glBindTexture(GL_TEXTURE_2D, TexInt);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
-
-	// set paramaters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
-}
-
-void cMesh::UploadNormalMap(std::string i_textureFilePath)
+void cMesh::UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath)
 {
 	std::vector<unsigned char> image;
 	unsigned width, height;
@@ -62,7 +21,7 @@ void cMesh::UploadNormalMap(std::string i_textureFilePath)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, NORMAL_MAP));
+	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
 }
 
 cVertexShaderProgram::cVertexShaderProgram()
@@ -224,17 +183,25 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 		size_t i_lastSlash = std::string(i_meshObjPath).find_last_of("/\\");
 		std::string directory = (i_lastSlash == std::string::npos) ? "" : std::string(i_meshObjPath).substr(0, i_lastSlash + 1);
 
+		const char* i_textureFileName;
+
 		// ambient
 		if (i_textureUsage->useTexture(AMBIENT)) {
-			i_mesh->UploadADSTexture(AMBIENT, directory);
+			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ka.data;
+			std::string i_texture = directory + std::string(i_textureFileName);
+			i_mesh->UploadPNGTexture(AMBIENT, i_texture);
 		}
 		// diffuse
 		if (i_textureUsage->useTexture(DIFFUSE)) {
-			i_mesh->UploadADSTexture(DIFFUSE, directory);
+			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Kd.data;
+			std::string i_texture = directory + std::string(i_textureFileName);
+			i_mesh->UploadPNGTexture(DIFFUSE, i_texture);
 		}
 		// specular
 		if (i_textureUsage->useTexture(SPECULAR)) {
-			i_mesh->UploadADSTexture(SPECULAR, directory);
+			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ks.data;
+			std::string i_texture = directory + std::string(i_textureFileName);
+			i_mesh->UploadPNGTexture(SPECULAR, i_texture);
 		}
 	}
 
@@ -247,7 +214,6 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 
 void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
 {
-
 	// get the number of attached shaders
 	GLint shaderCount = 0;
 	glGetProgramiv(m_shaderProgram, GL_ATTACHED_SHADERS, &shaderCount);
@@ -304,9 +270,11 @@ void cVertexShaderProgram::SetMVPMatrix(glm::mat4 i_matrix, eMVPMatrixFlags i_ma
 		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_matrix));
 		break;
 	case VIEW:
+		m_viewMat = i_matrix;
 		glUniformMatrix4fv(m_shaderViewMat, 1, GL_FALSE, glm::value_ptr(i_matrix));
 		break;
 	case PROJECTION:
+		m_projMat = i_matrix;
 		glUniformMatrix4fv(m_shaderProjectionMat, 1, GL_FALSE, glm::value_ptr(i_matrix));
 		break;
 	}
@@ -385,6 +353,51 @@ void cVertexShaderProgram::DrawCall()
 		}
 
 		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
+		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+	}
+	glBindVertexArray(0);
+}
+
+void cVertexShaderProgram::InitializeGeometryShaderProgram()
+{
+	m_geometryShaderProgram = new sGeometryShaderProgram();
+
+	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+	cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
+	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+	i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
+	i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
+	i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+	m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
+	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
+	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_geometryShader->GetID());
+	glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_fragmentShader->GetID());
+	glLinkProgram(m_geometryShaderProgram->m_shaderProgram);
+
+	m_geometryShaderProgram->m_shaderModelMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "model");
+	m_geometryShaderProgram->m_shaderViewMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "view");
+	m_geometryShaderProgram->m_shaderProjectionMat = glGetUniformLocation(m_geometryShaderProgram->m_shaderProgram, "projection");
+}
+
+void cVertexShaderProgram::GeometryDrawCall()
+{
+	if (!m_geometryShaderProgram) {
+		std::cout << "ERROR: No geometry shader program!" << std::endl;
+		return;
+	}
+
+	glUseProgram(m_geometryShaderProgram->m_shaderProgram);
+	glBindVertexArray(m_VAO);
+
+	glUniformMatrix4fv(m_geometryShaderProgram->m_shaderViewMat, 1, GL_FALSE, glm::value_ptr(m_viewMat));
+	glUniformMatrix4fv(m_geometryShaderProgram->m_shaderProjectionMat, 1, GL_FALSE, glm::value_ptr(m_projMat));
+
+	glDisable(GL_CULL_FACE);     // maybe your triangle winding is inconsistent
+	glEnable(GL_DEPTH_TEST);     // so lines respect depth
+	glLineWidth(2.0f);           // make lines more visible
+
+	for (cMesh* i_mesh : m_meshes) {
+		glUniformMatrix4fv(m_geometryShaderProgram->m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
 		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
 	}
 	glBindVertexArray(0);

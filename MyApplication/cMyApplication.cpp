@@ -27,7 +27,7 @@ void cMyApplication::CustomInitialization()
 		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(90.0f), glm::vec3(1, 0, 0));
 		i_ModelMat = glm::translate(i_ModelMat, -i_center);
 		i_planeMesh->SetModelMat(i_ModelMat);
-		i_planeMesh->UploadNormalMap("Assets/teapot_normal.png");
+		i_planeMesh->UploadPNGTexture(NORMAL_MAP, "Assets/teapot_normal.png");
 	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
@@ -39,12 +39,13 @@ void cMyApplication::CustomInitialization()
 	);
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+	m_displayProgram->InitializeGeometryShaderProgram();
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	m_lightPosition = glm::vec3(0.8f, 1.2f, 1.0f);
 
-	m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, false, false));
+	m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, false, false, false));
 	m_lightProgram->LinkShaders("Assets/shader/StandardVertexShader.glsl", "Assets/shader/StandardFragmentShader.glsl");
 	cMesh* i_lightMesh = m_lightProgram->UploadMesh("Assets/sphere.obj", new sTextureUsage(false, false, false));
 	{
@@ -155,6 +156,7 @@ void cMyApplication::MainLoopFunc()
 		m_displayProgram->SetLightingPosition(m_lightPosition);
 
 		m_displayProgram->DrawCall();
+		m_displayProgram->GeometryDrawCall();
 	}
 
 	{
