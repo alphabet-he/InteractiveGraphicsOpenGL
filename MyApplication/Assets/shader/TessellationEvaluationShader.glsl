@@ -10,10 +10,13 @@ layout(triangles, equal_spacing, ccw) in;
 out vec2 FragTexCoord;
 out vec3 FragPos;
 out mat3 TBN;
+out vec4 FragPosLightSpace;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceVP;
+
 uniform sampler2D displacementMap;
 uniform float displacementScale = 0.1;
 
@@ -29,6 +32,7 @@ void main(){
 
 	FragTexCoord = uv;
 	FragPos = vec3(model * vec4(pos, 1.0));
+	FragPosLightSpace = lightSpaceVP * model * vec4(pos, 1.0);
 	TBN = mat3(normalize(mat3(model) * tangent), normalize(mat3(model) * bitangent), normalize(mat3(model) * normal));
 
 	gl_Position = projection * view * model * vec4(pos, 1.0);

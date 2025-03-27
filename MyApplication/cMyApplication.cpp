@@ -44,7 +44,7 @@ void cMyApplication::CustomInitialization()
 	);
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
-	m_displayProgram->InitializeGeometryShaderProgram();
+	m_displayProgram->InitializeShadowMap(2048, 2048);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -165,6 +165,10 @@ void cMyApplication::MainLoopFunc()
 		}
 	}
 	
+	m_displayProgram->RenderSpotLightShadowMap(m_lightPosition,
+		glm::vec3(0.0f),
+		120.0f, 0.1f, 10.0f);
+
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
