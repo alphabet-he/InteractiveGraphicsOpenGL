@@ -1,6 +1,7 @@
 #pragma once
 #include <Application/iApplication.h>
 #include <Graphics/Graphics.h>
+#include <Assets/cMeshManager.h>
 
 class cMyApplication : public iApplication
 {
@@ -13,14 +14,10 @@ private:
 	void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) override;
 	void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) override;
 
-	void ChangeBackground(double i_deltaTime);
-
 private:
 	
 	cVertexShaderProgram* m_displayProgram;
 	cVertexShaderProgram* m_lightProgram;
-
-	double m_lastBackgroundChangeTime = 0;
 
 	bool m_input_leftMouseButton = false;
 	bool m_input_rightMouseButton = false;
@@ -34,7 +31,29 @@ private:
 
 	glm::vec3 m_lightPosition;
 
-	bool b_showingWireframe = false;
-	int m_tessellationLevel = 4;
+	std::shared_ptr<cMesh> m_lightMesh;
+
+	/*
+	* 
+	*/
+	cMeshSystem* m_meshSystem;
+
+	std::vector<std::string> m_files;
+	int m_newMeshSelected = -1;
+
+	sMeshInstance* m_selectedMesh = nullptr;
+
+	enum eTransformation {
+		LOCATION_X = 0,
+		LOCATION_Y = 1,
+		LOCATION_Z = 2, 
+		ROTATION_X = 3,
+		ROTATION_Y = 4,
+		ROTATION_Z = 5,
+		SCALE = 6,
+		COUNT = 7
+	};
+
+	eTransformation m_transformationAction = LOCATION_X;
 };
 

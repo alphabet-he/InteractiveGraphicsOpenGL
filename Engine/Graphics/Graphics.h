@@ -10,7 +10,8 @@ enum eTextureUsageFlags {
 	SCREEN_TEXTURE = 1 << 4,
 	SHADOW_MAP = 1 << 5,
 	NORMAL_MAP = 1 << 6,
-	DISPLACEMENT_MAP = 1 << 7
+	DISPLACEMENT_MAP = 1 << 7,
+	FLAT_SPRITE = 1 << 8
 };
 
 struct sTextureUsage {
@@ -42,7 +43,7 @@ class cMesh
 {
 public:
 	cy::TriMesh* m_cyMesh;
-	std::vector<std::pair<GLuint, eTextureUsageFlags>> m_textureBinding;
+	std::map<eTextureUsageFlags, GLuint> m_textureBinding;
 	size_t m_bufferOffset;
 	glm::mat4 m_modelMat; //TODO: Change accessibility
 
@@ -53,7 +54,7 @@ public:
 	}
 	void UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
-		m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(i_tex, i_flag));
+		m_textureBinding[i_flag] = i_tex;
 	};
 	inline void SetModelMat(const glm::mat4& i_model) { m_modelMat = i_model; };
 };
@@ -116,7 +117,7 @@ struct sGeometryShaderProgram {
 class cVertexShaderProgram {
 
 public:
-	std::vector<cMesh*> m_meshes;
+	std::vector<std::weak_ptr<cMesh>> m_meshes;
 	sVertexBufferStruct* m_vertexBufferStruct;
 
 protected:
@@ -148,7 +149,7 @@ public:
 
 	cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferStruct);
 
-	virtual cMesh* UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
+	std::shared_ptr<cMesh> UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
 
 	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 

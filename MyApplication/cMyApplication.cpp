@@ -6,34 +6,20 @@ cMyApplication::cMyApplication()
 	m_windowWidth = 800;
 	m_windowHeight = 600;
 	m_windowTitle = "Junxuan's OpenGL Application";
+
+	m_files.push_back("Assets/plane.obj");
+	m_files.push_back("Assets/teapot/teapot.obj");
+	m_files.push_back("Assets/sprite/Mario.png");
+
+	m_meshSystem = new cMeshSystem();
 }
 
 
 void cMyApplication::CustomInitialization()
 {
-
 	// display vertex buffer
-	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, true);
+	sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, false);
 	m_displayProgram = new cVertexShaderProgram(i_displayBufferStruct);
-	m_displayProgram->SetTessellationShader("Assets/shader/TessellationVertexShader.glsl", 
-		"Assets/shader/TessellationControlShader.glsl",
-		"Assets/shader/TessellationEvaluationShader.glsl",
-		"Assets/shader/TessellationFragmentShader.glsl");
-	m_displayProgram->InitializeGeometryShaderProgram();
-	
-	// plane
-	cMesh* i_planeMesh = m_displayProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, false, false));
-	{
-		i_planeMesh->m_cyMesh->ComputeBoundingBox();
-		cy::Vec3<float> i_centerCy = (i_planeMesh->m_cyMesh->GetBoundMax() + i_planeMesh->m_cyMesh->GetBoundMin()) * 0.5f;
-		glm::vec3 i_center = glm::vec3(i_centerCy.x, i_centerCy.y, i_centerCy.z);
-		glm::mat4 i_ModelMat = glm::mat4(1.0f);
-		i_ModelMat = glm::rotate(i_ModelMat, glm::radians(90.0f), glm::vec3(1, 0, 0));
-		i_ModelMat = glm::translate(i_ModelMat, -i_center);
-		i_planeMesh->SetModelMat(i_ModelMat);
-		i_planeMesh->UploadPNGTexture(NORMAL_MAP, "Assets/teapot_normal.png");
-		i_planeMesh->UploadPNGTexture(DISPLACEMENT_MAP, "Assets/teapot_disp.png");
-	}
 
 	m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
 	m_viewMatWhenPressed = m_viewMat;
@@ -42,6 +28,7 @@ void cMyApplication::CustomInitialization()
 		(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
 		0.1f, 100.0f  // Near & Far plane
 	);
+	m_displayProgram->LinkShaders("Assets/shader/TextureVertexShader.glsl", "Assets/shader/TextureFragmentShader.glsl");
 	
 	m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 	m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -52,12 +39,12 @@ void cMyApplication::CustomInitialization()
 
 	m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, false, false, false));
 	m_lightProgram->LinkShaders("Assets/shader/StandardVertexShader.glsl", "Assets/shader/StandardFragmentShader.glsl");
-	cMesh* i_lightMesh = m_lightProgram->UploadMesh("Assets/sphere.obj", new sTextureUsage(false, false, false));
+	m_lightMesh = m_lightProgram->UploadMesh("Assets/sphere.obj", new sTextureUsage(false, false, false));
 	{
 		glm::mat4 i_ModelMat = glm::mat4(1.0f);
 		i_ModelMat = glm::translate(i_ModelMat, m_lightPosition);
 		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.05f));
-		i_lightMesh->SetModelMat(i_ModelMat);
+		m_lightMesh->SetModelMat(i_ModelMat);
 	}
 	m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 
@@ -82,23 +69,32 @@ void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int 
 		}
 	}
 
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-		b_showingWireframe = !b_showingWireframe;
+	// select new mesh
+	if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS) {
+		if (key - GLFW_KEY_1 < m_files.size()) {
+			m_newMeshSelected = key - GLFW_KEY_1;
+		}
 	}
 
-	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-		m_tessellationLevel = std::max(1, m_tessellationLevel - 1);
-		m_displayProgram->SetTessellationLevel(m_tessellationLevel);
+	// delete mesh
+	if (key == GLFW_KEY_DELETE && action == GLFW_PRESS && m_selectedMesh) {
+		m_meshSystem->DeleteMesh(m_selectedMesh);
+		m_selectedMesh = nullptr;
 	}
-	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-		m_tessellationLevel = std::min(10, m_tessellationLevel + 1);
-		m_displayProgram->SetTessellationLevel(m_tessellationLevel);
+
+	// switch transformation
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
+		m_transformationAction = static_cast<eTransformation>(
+			(m_transformationAction == eTransformation::COUNT - 1)
+			? 0
+			: m_transformationAction + 1
+			);
 	}
 }
 
 void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+	if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 		if (action == GLFW_PRESS && !m_input_rightMouseButton) {
 			m_input_leftMouseButton = true;
 			glfwGetCursorPos(window, &m_input_mouseLocationWhenPressedX, &m_input_mouseLocationWhenPressedY);
@@ -121,6 +117,53 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 		if (action == GLFW_RELEASE) {
 			m_input_rightMouseButton = false;
 			return;
+		}
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+
+		glm::ivec4 i_viewport(0, 0, m_windowWidth, m_windowHeight);
+		double i_mouseX = INT_MIN;
+		double i_mouseY = INT_MIN;
+		glfwGetCursorPos(window, &i_mouseX, &i_mouseY);
+		glm::vec3 rayStart = glm::unProject(glm::vec3(i_mouseX, m_windowHeight - i_mouseY, 0.0f),
+			m_viewMat, m_projectionMat, i_viewport);
+		glm::vec3 rayEnd = glm::unProject(glm::vec3(i_mouseX, m_windowHeight - i_mouseY, 1.0f),
+			m_viewMat, m_projectionMat, i_viewport);
+		glm::vec3 rayDir = glm::normalize(rayEnd - rayStart);
+
+		if (m_newMeshSelected != -1) {
+			std::string i_filename = m_files[m_newMeshSelected];
+			bool b_isPng = false;
+			const char* i_meshName;
+			if (i_filename.compare(i_filename.length() - 4, 4, ".png") == 0) {
+				b_isPng = true;
+				i_meshName = "Assets/plane.obj";
+			}
+			else {
+				i_meshName = i_filename.c_str();
+			}
+			std::shared_ptr<cMesh> i_mesh = m_displayProgram->UploadMesh(i_meshName, new sTextureUsage(false, true, false));
+			m_meshSystem->RegisterMesh(i_mesh);
+			{
+				glm::vec3 i_worldPos = rayStart + rayDir * 5.0f;
+				glm::mat4 i_model = glm::translate(glm::mat4(1.0f), i_worldPos);
+				i_mesh->SetModelMat(i_model);
+			}
+			if (b_isPng) {
+				i_mesh->UploadPNGTexture(FLAT_SPRITE, i_filename);
+			}
+			m_newMeshSelected = -1;
+		}
+		else {
+			sMeshInstance* i = m_meshSystem->SelectMesh(rayStart, rayDir);
+			if (i) {
+				std::cout << "Selected mesh: " << i->m_mesh.get() << "\n";
+				m_selectedMesh = i;
+			}
+			else {
+				m_selectedMesh = nullptr;
+			}
 		}
 	}
 }
@@ -163,8 +206,46 @@ void cMyApplication::MainLoopFunc()
 					glm::vec3(0, 0, (m_input_mouseLocationWhenPressedY - i_mousePos_y) * 0.02));
 			}
 		}
+
+		if ((glfwGetKey(m_applicationWindow, GLFW_KEY_LEFT) || glfwGetKey(m_applicationWindow, GLFW_KEY_RIGHT)) && m_selectedMesh) {
+			int i_transformDir = 1;
+			if (glfwGetKey(m_applicationWindow, GLFW_KEY_LEFT)) i_transformDir = -1;
+			glm::mat4 i_modelMat = m_selectedMesh->m_mesh->m_modelMat;
+			float i_translationStep = 0.05f;
+			float i_rotationStep = glm::radians(3.0f);
+			float i_scaleStep = 0.05f;
+			switch (m_transformationAction)
+			{
+			case cMyApplication::LOCATION_X:
+				i_modelMat = glm::translate(i_modelMat, glm::vec3(i_transformDir * i_translationStep, 0.0f, 0.0f));
+				break;
+			case cMyApplication::LOCATION_Y:
+				i_modelMat = glm::translate(i_modelMat, glm::vec3(0.0f, i_transformDir * i_translationStep, 0.0f));
+				break;
+			case cMyApplication::LOCATION_Z:
+				i_modelMat = glm::translate(i_modelMat, glm::vec3(0.0f, 0.0f, i_transformDir * i_translationStep));
+				break;
+			case cMyApplication::ROTATION_X:
+				i_modelMat = glm::rotate(i_modelMat, i_transformDir * i_rotationStep, glm::vec3(1.0f, 0.0f, 0.0f));
+				break;
+			case cMyApplication::ROTATION_Y:
+				i_modelMat = glm::rotate(i_modelMat, i_transformDir * i_rotationStep, glm::vec3(0.0f, 1.0f, 0.0f));
+				break;
+			case cMyApplication::ROTATION_Z:
+				i_modelMat = glm::rotate(i_modelMat, i_transformDir * i_rotationStep, glm::vec3(0.0f, 0.0f, 1.0f));
+				break;
+			case cMyApplication::SCALE:
+				i_modelMat = glm::scale(i_modelMat, glm::vec3(1.0f + i_transformDir * i_scaleStep));
+				break;
+			case cMyApplication::COUNT:
+				break;
+			default:
+				break;
+			}
+			m_selectedMesh->m_mesh->SetModelMat(i_modelMat);
+		}
 	}
-	
+
 	m_displayProgram->RenderSpotLightShadowMap(m_lightPosition,
 		glm::vec3(0.0f),
 		120.0f, 0.1f, 10.0f);
@@ -172,6 +253,8 @@ void cMyApplication::MainLoopFunc()
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glViewport(0, 0, m_windowWidth, m_windowHeight);
 
 		m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
@@ -181,34 +264,15 @@ void cMyApplication::MainLoopFunc()
 		m_displayProgram->SetLightingPosition(m_lightPosition);
 
 		m_displayProgram->DrawCall();
-		if (b_showingWireframe) {
-			m_displayProgram->GeometryDrawCall();
-		}
 	}
 
 	{
 		glm::mat4 i_ModelMat = glm::mat4(1.0f);
 		i_ModelMat = glm::translate(i_ModelMat, m_lightPosition);
 		i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.02f));
-		m_lightProgram->m_meshes[0]->SetModelMat(i_ModelMat);
+		m_lightMesh->SetModelMat(i_ModelMat);
 		m_lightProgram->SetMVPMatrix(m_viewMat, VIEW);
 		m_lightProgram->DrawCall();
 	}
 	
-}
-
-void cMyApplication::ChangeBackground(double i_deltaTime)
-{
-	if (glfwGetTime() - m_lastBackgroundChangeTime > i_deltaTime) {
-		GLfloat i_currentColor[4];
-		glGetFloatv(GL_COLOR_CLEAR_VALUE, i_currentColor);
-		if (i_currentColor[0] == 0.0f) {
-			glClearColor(0.1f, 0.0f, 0.2f, 1.0f);
-		}
-		else {
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		}
-
-		m_lastBackgroundChangeTime = glfwGetTime();
-	}
 }

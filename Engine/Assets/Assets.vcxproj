@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{69d01f09-2f2b-4dd1-aede-982a6c706608}</ProjectGuid>
-    <RootNamespace>MyApplication</RootNamespace>
+    <ProjectGuid>{162d1ecb-864e-4ccb-bb44-1b5ec5d7b697}</ProjectGuid>
+    <RootNamespace>Assets</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -71,22 +71,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -94,22 +90,18 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External;$(SolutionDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)External</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\GLEW\lib\Release\$(Platform)\glew32.lib;$(SolutionDir)External\GLFW\$(Platform)\glfw3.lib;User32.lib;
-Gdi32.lib;
-Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -117,45 +109,37 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External;$(SolutionDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)External</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\GLEW\lib\Release\$(Platform)\glew32.lib;$(SolutionDir)External\GLFW\$(Platform)\glfw3.lib;User32.lib;
-Gdi32.lib;
-Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External;$(SolutionDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)External</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\GLEW\lib\Release\$(Platform)\glew32.lib;$(SolutionDir)External\GLFW\$(Platform)\glfw3.lib;User32.lib;
-Gdi32.lib;
-Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -163,42 +147,32 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External;$(SolutionDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)External</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)External\GLEW\lib\Release\$(Platform)\glew32.lib;$(SolutionDir)External\GLFW\$(Platform)\glfw3.lib;User32.lib;
-Gdi32.lib;
-Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(OutDir)Assets\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Engine\Application\Application.vcxproj">
-      <Project>{cb11bc01-7330-45b7-aad5-a3fd9ce03a29}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Engine\Assets\Assets.vcxproj">
-      <Project>{162d1ecb-864e-4ccb-bb44-1b5ec5d7b697}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Engine\Graphics\Graphics.vcxproj">
+    <ClInclude Include="cMeshManager.h" />
+    <ClInclude Include="Include.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cMeshManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Graphics\Graphics.vcxproj">
       <Project>{a79e8e93-b5b9-407d-ad72-33113ca766d3}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="cMyApplication.cpp" />
-    <ClCompile Include="EntryPoint.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="cMyApplication.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

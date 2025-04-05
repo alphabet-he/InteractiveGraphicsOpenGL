@@ -1,7 +1,13 @@
 #include "Graphics.h"
+#include <filesystem>
 
 void cMesh::UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath)
 {
+	std::ifstream file(i_textureFilePath);
+	if (!file.good()) {
+		i_textureFilePath = "Assets/white.png";
+	}
+
 	std::vector<unsigned char> image;
 	unsigned width, height;
 	unsigned error = lodepng::decode(image, width, height, i_textureFilePath); // use loadpng to decode it
@@ -18,10 +24,28 @@ void cMesh::UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_te
 	// set paramaters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	m_textureBinding.push_back(std::pair<GLuint, eTextureUsageFlags>(TexInt, i_textureUsage));
+	GLint i_wrapModeS = GL_REPEAT;
+	GLint i_wrapModeT = GL_REPEAT;
+
+	switch (i_textureUsage) {
+	case SCREEN_TEXTURE:
+	case FLAT_SPRITE:
+	case SKYBOX_REFLECTION:
+		i_wrapModeS = i_wrapModeT = GL_CLAMP_TO_EDGE;
+		break;
+	case SHADOW_MAP:
+		i_wrapModeS = i_wrapModeT = GL_CLAMP_TO_BORDER;
+		break;
+	default:
+		i_wrapModeS = i_wrapModeT = GL_REPEAT;
+		break;
+	}
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, i_wrapModeS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, i_wrapModeT);
+
+	m_textureBinding[i_textureUsage] = TexInt;
 }
 
 cVertexShaderProgram::cVertexShaderProgram()
@@ -94,9 +118,9 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage)
+std::shared_ptr<cMesh> cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage)
 {
-	cMesh* i_mesh = new cMesh();
+	auto i_mesh = std::make_shared<cMesh>();
 	i_mesh->m_cyMesh = new cy::TriMesh();
 	i_mesh->m_cyMesh->LoadFromFileObj(i_meshObjPath);
 
@@ -187,19 +211,43 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 
 		// ambient
 		if (i_textureUsage->useTexture(AMBIENT)) {
-			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ka.data;
+			if (i_mesh->m_cyMesh->NM() == 0) {
+				i_textureFileName = "white.png";
+			}
+			else {
+				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ka.data;
+			}
+			if (!i_textureFileName) {
+				i_textureFileName = "white.png";
+			}
 			std::string i_texture = directory + std::string(i_textureFileName);
 			i_mesh->UploadPNGTexture(AMBIENT, i_texture);
 		}
 		// diffuse
 		if (i_textureUsage->useTexture(DIFFUSE)) {
-			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Kd.data;
+			if (i_mesh->m_cyMesh->NM() == 0) {
+				i_textureFileName = "white.png";
+			}
+			else {
+				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Kd.data;
+			}
+			if (!i_textureFileName) {
+				i_textureFileName = "white.png";
+			}
 			std::string i_texture = directory + std::string(i_textureFileName);
 			i_mesh->UploadPNGTexture(DIFFUSE, i_texture);
 		}
 		// specular
 		if (i_textureUsage->useTexture(SPECULAR)) {
-			i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ks.data;
+			if (i_mesh->m_cyMesh->NM() == 0) {
+				i_textureFileName = "grey.png";
+			}
+			else {
+				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ks.data;
+			}
+			if (!i_textureFileName) {
+				i_textureFileName = "grey.png";
+			}
 			std::string i_texture = directory + std::string(i_textureFileName);
 			i_mesh->UploadPNGTexture(SPECULAR, i_texture);
 		}
@@ -208,7 +256,8 @@ cMesh* cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	m_meshes.push_back(i_mesh);
+	std::weak_ptr<cMesh> i_weakptr = i_mesh;
+	m_meshes.push_back(i_weakptr);
 	return i_mesh;
 }
 
@@ -319,74 +368,84 @@ void cVertexShaderProgram::DrawCall()
 	glUseProgram(m_shaderProgram);
 	glBindVertexArray(m_VAO);
 
-	for (cMesh* i_mesh : m_meshes) {
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
 
-		int i_textureUnit = 0;
+		if (auto i_mesh = it->lock()) {
+			int i_textureUnit = 0;
 
-		for (const auto& i_texBinding : i_mesh->m_textureBinding) {
+			for (const auto& i_texBinding : i_mesh->m_textureBinding) {
 
-			glActiveTexture(GL_TEXTURE0 + i_textureUnit);
-			switch (i_texBinding.second) {
-			case AMBIENT:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_textureKa, i_textureUnit);
-				break;
-			case DIFFUSE:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_textureKd, i_textureUnit);
-				break;
-			case SPECULAR:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_textureKs, i_textureUnit);
-				break;
-			case SKYBOX_REFLECTION:
-				glBindTexture(GL_TEXTURE_CUBE_MAP, i_texBinding.first);
-				glUniform1i(m_textureSkyboxReflection, i_textureUnit);
-				break;
-			case NORMAL_MAP:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_textureNormalMap, i_textureUnit);
-				break;
-			case DISPLACEMENT_MAP:
-				glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-				glUniform1i(m_textureDisplacementMap, i_textureUnit);
-				break;
-			case SCREEN_TEXTURE:
-				if (m_screenTextureInfo) {
-					glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-					glUniform1i(m_screenTextureInfo->m_screenTextureTexPosition, i_textureUnit);
-					GLenum err;
-					while ((err = glGetError()) != GL_NO_ERROR) {
-						std::cerr << "OpenGL ERROR: " << err << std::endl;
+				glActiveTexture(GL_TEXTURE0 + i_textureUnit);
+				switch (i_texBinding.first) {
+				case AMBIENT:
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+					glUniform1i(m_textureKa, i_textureUnit);
+					break;
+				case FLAT_SPRITE:
+				case DIFFUSE:
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+					glUniform1i(m_textureKd, i_textureUnit);
+					break;
+				case SPECULAR:
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+					glUniform1i(m_textureKs, i_textureUnit);
+					break;
+				case SKYBOX_REFLECTION:
+					glBindTexture(GL_TEXTURE_CUBE_MAP, i_texBinding.second);
+					glUniform1i(m_textureSkyboxReflection, i_textureUnit);
+					break;
+				case NORMAL_MAP:
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+					glUniform1i(m_textureNormalMap, i_textureUnit);
+					break;
+				case DISPLACEMENT_MAP:
+					glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+					glUniform1i(m_textureDisplacementMap, i_textureUnit);
+					break;
+				case SCREEN_TEXTURE:
+					if (m_screenTextureInfo) {
+						glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+						glUniform1i(m_screenTextureInfo->m_screenTextureTexPosition, i_textureUnit);
+						GLenum err;
+						while ((err = glGetError()) != GL_NO_ERROR) {
+							std::cerr << "OpenGL ERROR: " << err << std::endl;
+						}
 					}
+					else {
+						std::cerr << "ERROR: No screen reflection information" << std::endl;
+					}
+					break;
+				case SHADOW_MAP:
+					if (m_shadowMapInfo) {
+						glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+						glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, i_textureUnit);
+					}
+					else {
+						std::cerr << "ERROR: No shadow map information" << std::endl;
+					}
+					break;
 				}
-				else {
-					std::cerr << "ERROR: No screen reflection information" << std::endl;
-				}
-				break;
-			case SHADOW_MAP:
-				if (m_shadowMapInfo) {
-					glBindTexture(GL_TEXTURE_2D, i_texBinding.first);
-					glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, i_textureUnit);
-				}
-				else {
-					std::cerr << "ERROR: No shadow map information" << std::endl;
-				}
-				break;
+
+				i_textureUnit++;
 			}
 
-			i_textureUnit++;
+			glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
+			if (b_useTessellation) {
+				glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
+				glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
+			}
+			else {
+				glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			}
+			++it;
 		}
 
-		glUniformMatrix4fv(m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
-		if (b_useTessellation) {
-			glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
-			glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
-		}
 		else {
-			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			it = m_meshes.erase(it);
 		}
 	}
+		
+		
 	glBindVertexArray(0);
 }
 
@@ -461,14 +520,21 @@ void cVertexShaderProgram::GeometryDrawCall()
 
 	glLineWidth(2.0f);
 
-	for (cMesh* i_mesh : m_meshes) {
-		glUniformMatrix4fv(m_geometryShaderProgram->m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
-		if (b_useTessellation) {
-			glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
-			glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) 
+	{
+		if (auto i_mesh = it->lock()) {
+			glUniformMatrix4fv(m_geometryShaderProgram->m_shaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
+			if (b_useTessellation) {
+				glPatchParameteri(GL_PATCH_VERTICES, 3); // each patch = 1 triangle
+				glDrawArrays(GL_PATCHES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3); // instead of GL_TRIANGLES
+			}
+			else {
+				glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			}
+			++it;
 		}
 		else {
-			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			it = m_meshes.erase(it);
 		}
 	}
 	glBindVertexArray(0);
@@ -546,8 +612,14 @@ GLuint cVertexShaderProgram::RenderToScreenTexture(glm::vec3 i_cameraLocation, g
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	for (cMesh* i : m_meshes) {
-		i->UploadTexture(m_screenTextureInfo->m_texture, SCREEN_TEXTURE);
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i = it->lock()) {
+			i->UploadTexture(m_screenTextureInfo->m_texture, SCREEN_TEXTURE);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
+		}
 	}
 
 	return m_screenTextureInfo->m_texture;
@@ -708,9 +780,15 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 		1, GL_FALSE, glm::value_ptr(i_projMatrix));
 
 	glBindVertexArray(m_VAO);
-	for (cMesh* i_mesh : m_meshes) {
-		glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
-		glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i_mesh = it->lock()) {
+			glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
+			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
+		}
 	}
 	glBindVertexArray(0);
 
@@ -720,8 +798,14 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE,
 		glm::value_ptr(i_lightSpaceVP));
 
-	for (cMesh* i : m_meshes) {
-		i->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i_mesh = it->lock()) {
+			i_mesh->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
+		}
 	}
 	return m_shadowMapInfo->m_texture;
 }
