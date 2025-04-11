@@ -8,13 +8,9 @@ protected:
 	uint16_t m_windowWidth;
 	std::string m_windowTitle;
 
-	// render to texture
-	GLuint m_FBO, RBO, renderToTex;
-	GLuint RenderToTextureVAO, RenerToTextureVBO;
-	GLuint RenderToTextureShaderProgram;
-	cy::TriMesh* renderToTexturePlane;
-
 	GLFWwindow* m_applicationWindow;
+
+	cUserInterfaceSystem* m_UiSystem;
 
 	bool m_running = false;
 
@@ -34,8 +30,6 @@ private:
 	static void _MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
 
 protected:
-
-	void InitRenderToTexture();
 
 	virtual void MainLoopFunc();
 	virtual void CustomInitialization();

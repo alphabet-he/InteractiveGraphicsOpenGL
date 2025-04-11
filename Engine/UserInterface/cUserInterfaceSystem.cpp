@@ -1,0 +1,67 @@
+#include "cUserInterfaceSystem.h"
+#include <iostream>
+
+cUserInterfaceSystem::cUserInterfaceSystem(GLFWwindow* i_window, const char* i_openglVersion)
+{
+	m_window = i_window;
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(i_window, true);
+	ImGui_ImplOpenGL3_Init(i_openglVersion);
+}
+
+void cUserInterfaceSystem::Destroy()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void cUserInterfaceSystem::DrawUI()
+{
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	for(sPanel* i_panel : m_panels)
+	{
+		if (!i_panel->b_active) continue;
+
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, i_panel->m_color);
+		ImGui::SetNextWindowPos(i_panel->m_position);
+		ImGui::SetNextWindowSize(i_panel->m_size);
+		ImGui::Begin(i_panel->m_name, nullptr,
+			ImGuiWindowFlags_NoTitleBar |        // Hides the title bar
+			ImGuiWindowFlags_NoResize |          // Prevents resizing
+			ImGuiWindowFlags_NoMove |            // Prevents dragging
+			ImGuiWindowFlags_NoCollapse |        // Hides the collapse button
+			ImGuiWindowFlags_NoScrollbar         // Hides scrollbars
+		);
+		for (sUIComponent* i_comp : i_panel->m_components) {
+			if (i_comp->b_active) {
+				i_comp->Render();
+			}
+		}
+
+		ImGui::End();
+		ImGui::PopStyleColor();
+	}
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void sButton::Render()
+{
+	if (ImGui::Button("Click Me")) {
+		std::cout << "YES! Button Clicked.\n";
+	}
+}

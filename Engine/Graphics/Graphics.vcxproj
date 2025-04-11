@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\External\LoadPNG\lodepng.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Include.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\External\LoadPNG\lodepng.cpp" />
     <ClCompile Include="Graphics.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

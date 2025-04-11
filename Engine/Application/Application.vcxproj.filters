@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="External">
       <UniqueIdentifier>{070f31de-6f84-4c69-92d5-33d9a53b2cb9}</UniqueIdentifier>
     </Filter>
@@ -21,9 +17,6 @@
     <ClCompile Include="iApplication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\External\LoadPNG\lodepng.cpp">
-      <Filter>External</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iApplication.h">
@@ -31,9 +24,6 @@
     </ClInclude>
     <ClInclude Include="Include.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\External\LoadPNG\lodepng.h">
-      <Filter>External</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

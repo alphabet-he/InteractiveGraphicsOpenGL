@@ -50,6 +50,17 @@ void cMyApplication::CustomInitialization()
 
 	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 	std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
+	// ui
+	{
+		sPanel* i_panel = new sPanel("Test", 0, m_windowHeight-128, m_windowWidth, 128, 1, 0, 0, 0.1);
+
+		GLuint i = Graphics::GenerateTextureFromImage("Assets/sprite/Mario.png");
+		sButton* i_button = new sButton(32, 32, 64, 64, i, []() {std::cout << "Button clicked!\n"; });
+		i_panel->m_components.push_back(i_button);
+
+		m_UiSystem->AddPanel(i_panel);
+	}
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -94,6 +105,9 @@ void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int 
 
 void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+	if (ImGui::GetIO().WantCaptureMouse)
+		return;
+
 	if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 		if (action == GLFW_PRESS && !m_input_rightMouseButton) {
 			m_input_leftMouseButton = true;

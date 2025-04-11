@@ -881,3 +881,32 @@ void cEnvironmentShaderProgram::DrawCall()
 	glDepthMask(GL_TRUE);
 	glBindVertexArray(0);
 }
+
+GLuint Graphics::GenerateTextureFromImage(std::string i_textureFilePath)
+{
+	std::ifstream file(i_textureFilePath);
+	if (!file.good()) {
+		i_textureFilePath = "Assets/white.png";
+	}
+
+	std::vector<unsigned char> image;
+	unsigned width, height;
+	unsigned error = lodepng::decode(image, width, height, i_textureFilePath); // use loadpng to decode it
+	if (error) {
+		std::cout << "LodePNG decode error " << error << ": " << lodepng_error_text(error) << std::endl;
+	}
+
+	// upload the texture to OpenGL
+	GLuint TexInt;
+	glGenTextures(1, &TexInt);
+	glBindTexture(GL_TEXTURE_2D, TexInt);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+	// Set texture parameters (basic ones)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Smooth scaling
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);              // Smooth display
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);           // Clamp edges
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	return TexInt;
+}

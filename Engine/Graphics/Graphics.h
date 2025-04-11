@@ -214,5 +214,6 @@ public:
 	}
 };
 
-
-
+namespace Graphics {
+	GLuint GenerateTextureFromImage(std::string i_textureFilePath);
+}
