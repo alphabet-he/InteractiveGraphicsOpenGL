@@ -1,5 +1,4 @@
 #include "cUserInterfaceSystem.h"
-#include <iostream>
 
 cUserInterfaceSystem::cUserInterfaceSystem(GLFWwindow* i_window, const char* i_openglVersion)
 {
@@ -61,7 +60,11 @@ void cUserInterfaceSystem::DrawUI()
 
 void sButton::Render()
 {
-	if (ImGui::Button("Click Me")) {
-		std::cout << "YES! Button Clicked.\n";
+	ImGui::SetCursorPos(m_position);
+	std::string button_id = "##button_" + std::to_string(reinterpret_cast<uintptr_t>(this));
+	if (ImGui::ImageButton(button_id.c_str(), m_texture, m_size)) {
+		if (m_callback) {
+			m_callback(); 
+		}
 	}
 }

@@ -53,10 +53,29 @@ void cMyApplication::CustomInitialization()
 
 	// ui
 	{
+		sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, false);
+		cVertexShaderProgram* i_uiObjectProgram = new cVertexShaderProgram(i_displayBufferStruct);
+
+		glm::mat4 i_projectionMat = glm::perspective(
+			glm::radians(45.0f),    // Field of View
+			(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
+			0.1f, 100.0f  // Near & Far plane
+		);
+		i_uiObjectProgram->LinkShaders("Assets/shader/TextureVertexShader.glsl", "Assets/shader/TextureFragmentShader.glsl");
+
+		i_uiObjectProgram->SetMVPMatrix(i_projectionMat, PROJECTION);
+
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		i_uiObjectProgram->UploadMesh("Assets/plane.obj", new sTextureUsage(false, true, false));
+
+		i_uiObjectProgram->InitializeScreenTexture(600, 600);
+		GLuint i_objTexture = i_uiObjectProgram->RenderToScreenTexture(glm::vec3(5, 8, 5), glm::vec3(-5, -8, -5), std::vector<cVertexShaderProgram*>{i_uiObjectProgram});
+
 		sPanel* i_panel = new sPanel("Test", 0, m_windowHeight-128, m_windowWidth, 128, 1, 0, 0, 0.1);
 
-		GLuint i = Graphics::GenerateTextureFromImage("Assets/sprite/Mario.png");
-		sButton* i_button = new sButton(32, 32, 64, 64, i, []() {std::cout << "Button clicked!\n"; });
+		//GLuint i = Graphics::GenerateTextureFromImage("Assets/sprite/Mario.png");
+		sButton* i_button = new sButton(32, 32, 64, 64, i_objTexture, []() {std::cout << "Button clicked!\n"; });
 		i_panel->m_components.push_back(i_button);
 
 		m_UiSystem->AddPanel(i_panel);
@@ -105,9 +124,6 @@ void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int 
 
 void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (ImGui::GetIO().WantCaptureMouse)
-		return;
-
 	if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 		if (action == GLFW_PRESS && !m_input_rightMouseButton) {
 			m_input_leftMouseButton = true;

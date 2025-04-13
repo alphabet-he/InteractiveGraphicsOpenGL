@@ -25,6 +25,11 @@ public:
 
 private:
 	static iApplication* instance;
+
+	static GLFWkeyfun         s_imgui_key_callback;
+	static GLFWmousebuttonfun s_imgui_mouse_callback;
+	static GLFWcursorposfun   s_imgui_cursorpos_callback;
+
 	static void _KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void _MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void _MoveCursorCallback(GLFWwindow* window, double xpos, double ypos);
