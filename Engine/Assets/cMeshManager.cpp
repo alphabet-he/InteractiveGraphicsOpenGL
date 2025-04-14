@@ -1,9 +1,14 @@
 #include "cMeshManager.h"
 
-void cMeshSystem::RegisterMesh(std::shared_ptr<cMesh> i_mesh)
+sMeshInstance* cMeshSystem::RegisterMesh(const char* i_meshObjPath)
 {
+    auto i_mesh = std::make_shared<cMesh>();
+    i_mesh->m_cyMesh = new cy::TriMesh();
+    i_mesh->m_cyMesh->LoadFromFileObj(i_meshObjPath);
+    i_mesh->m_filePath = i_meshObjPath;
+
 	auto i = std::make_unique<sMeshInstance>();
-	i->m_mesh = i_mesh;
+    i->SetMesh(i_mesh);
 
 	i_mesh->m_cyMesh->ComputeBoundingBox();
     glm::vec3 i_boundMax = glm::vec3(i_mesh->m_cyMesh->GetBoundMax().x,
@@ -16,7 +21,9 @@ void cMeshSystem::RegisterMesh(std::shared_ptr<cMesh> i_mesh)
     i->m_boundingBoxMax = i_boundMax;
     i->m_boundingBoxMin = i_boundMin;
 
+    sMeshInstance* ret = i.get();
 	m_meshList.push_back(std::move(i));
+    return ret;
 }
 
 sMeshInstance* cMeshSystem::SelectMesh(const glm::vec3& rayOrigin, const glm::vec3& rayDir)
@@ -27,7 +34,7 @@ sMeshInstance* cMeshSystem::SelectMesh(const glm::vec3& rayOrigin, const glm::ve
 
     for (const auto& mesh : m_meshList) {
         float hitDist;
-        glm::mat4 invModel = glm::inverse(mesh->m_mesh->m_modelMat);
+        glm::mat4 invModel = glm::inverse(mesh->GetMesh().lock()->m_modelMat);
         glm::vec3 localRayOrigin = glm::vec3(invModel * glm::vec4(rayOrigin, 1.0f));
         glm::vec3 localRayDir = glm::normalize(glm::vec3(invModel * glm::vec4(rayDir, 0.0f)));
         if (IntersectRayAABB(localRayOrigin, localRayDir,

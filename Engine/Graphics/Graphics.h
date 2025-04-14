@@ -46,11 +46,13 @@ public:
 	std::map<eTextureUsageFlags, GLuint> m_textureBinding;
 	size_t m_bufferOffset;
 	glm::mat4 m_modelMat; //TODO: Change accessibility
+	const char* m_filePath;
 
 public:
 	cMesh() :m_cyMesh(nullptr), m_bufferOffset(0) {
 		m_textureBinding.clear();
 		m_modelMat = glm::mat4(1.0f);
+		m_filePath = "";
 	}
 	void UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
@@ -149,7 +151,7 @@ public:
 
 	cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferStruct);
 
-	std::shared_ptr<cMesh> UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage);
+	void UploadMesh(std::weak_ptr<cMesh> i_meshWeakPtr, sTextureUsage* i_textureUsage);
 
 	void LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename);
 

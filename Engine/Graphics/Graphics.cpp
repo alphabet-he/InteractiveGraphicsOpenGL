@@ -118,28 +118,28 @@ cVertexShaderProgram::cVertexShaderProgram(sVertexBufferStruct* i_vertexBufferSt
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-std::shared_ptr<cMesh> cVertexShaderProgram::UploadMesh(const char* i_meshObjPath, sTextureUsage* i_textureUsage)
+void cVertexShaderProgram::UploadMesh(std::weak_ptr<cMesh> i_meshWeakPtr, sTextureUsage* i_textureUsage)
 {
-	auto i_mesh = std::make_shared<cMesh>();
-	i_mesh->m_cyMesh = new cy::TriMesh();
-	i_mesh->m_cyMesh->LoadFromFileObj(i_meshObjPath);
+	if (!i_meshWeakPtr.lock()) {
+		return;
+	}
 
 	std::vector<GLfloat> i_vertices;
 
-	for (int i = 0; i < (int)i_mesh->m_cyMesh->NF(); i++) {
+	for (int i = 0; i < (int)i_meshWeakPtr.lock()->m_cyMesh->NF(); i++) {
 
 		cy::Vec3f i_tangent, i_bitangent;
 		if (m_vertexBufferStruct->hasAttribute(TANGENT)) {
 			unsigned int vInd[3], uvInd[3];
 			for (int j = 0; j < 3; j++) {
-				vInd[j] = i_mesh->m_cyMesh->F(i).v[j];
-				uvInd[j] = i_mesh->m_cyMesh->FT(i).v[j];
+				vInd[j] = i_meshWeakPtr.lock()->m_cyMesh->F(i).v[j];
+				uvInd[j] = i_meshWeakPtr.lock()->m_cyMesh->FT(i).v[j];
 			}
 
-			cy::Vec3f i_edge1 = i_mesh->m_cyMesh->V(vInd[1]) - i_mesh->m_cyMesh->V(vInd[0]);
-			cy::Vec3f i_edge2 = i_mesh->m_cyMesh->V(vInd[2]) - i_mesh->m_cyMesh->V(vInd[0]);
-			cy::Vec3f i_deltaUV1 = i_mesh->m_cyMesh->VT(uvInd[1]) - i_mesh->m_cyMesh->VT(uvInd[0]);
-			cy::Vec3f i_deltaUV2 = i_mesh->m_cyMesh->VT(uvInd[2]) - i_mesh->m_cyMesh->VT(uvInd[0]);
+			cy::Vec3f i_edge1 = i_meshWeakPtr.lock()->m_cyMesh->V(vInd[1]) - i_meshWeakPtr.lock()->m_cyMesh->V(vInd[0]);
+			cy::Vec3f i_edge2 = i_meshWeakPtr.lock()->m_cyMesh->V(vInd[2]) - i_meshWeakPtr.lock()->m_cyMesh->V(vInd[0]);
+			cy::Vec3f i_deltaUV1 = i_meshWeakPtr.lock()->m_cyMesh->VT(uvInd[1]) - i_meshWeakPtr.lock()->m_cyMesh->VT(uvInd[0]);
+			cy::Vec3f i_deltaUV2 = i_meshWeakPtr.lock()->m_cyMesh->VT(uvInd[2]) - i_meshWeakPtr.lock()->m_cyMesh->VT(uvInd[0]);
 
 			float f = 1.0f / (i_deltaUV1.x * i_deltaUV2.y - i_deltaUV2.x * i_deltaUV1.y);
 			i_tangent = f * (i_deltaUV2.y * i_edge1 - i_deltaUV1.y * i_edge2);
@@ -150,23 +150,23 @@ std::shared_ptr<cMesh> cVertexShaderProgram::UploadMesh(const char* i_meshObjPat
 
 		for (int j = 0; j < 3; j++) {
 			if (m_vertexBufferStruct->hasAttribute(POSITION)) {
-				unsigned int i_vertexInd = i_mesh->m_cyMesh->F(i).v[j];
-				i_vertices.push_back(i_mesh->m_cyMesh->V(i_vertexInd).x);
-				i_vertices.push_back(i_mesh->m_cyMesh->V(i_vertexInd).y);
-				i_vertices.push_back(i_mesh->m_cyMesh->V(i_vertexInd).z);
+				unsigned int i_vertexInd = i_meshWeakPtr.lock()->m_cyMesh->F(i).v[j];
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->V(i_vertexInd).x);
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->V(i_vertexInd).y);
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->V(i_vertexInd).z);
 			}
 
 			if (m_vertexBufferStruct->hasAttribute(NORMAL)) {
-				unsigned int i_normalInd = i_mesh->m_cyMesh->FN(i).v[j];
-				i_vertices.push_back(i_mesh->m_cyMesh->VN(i_normalInd).x);
-				i_vertices.push_back(i_mesh->m_cyMesh->VN(i_normalInd).y);
-				i_vertices.push_back(i_mesh->m_cyMesh->VN(i_normalInd).z);
+				unsigned int i_normalInd = i_meshWeakPtr.lock()->m_cyMesh->FN(i).v[j];
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->VN(i_normalInd).x);
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->VN(i_normalInd).y);
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->VN(i_normalInd).z);
 			}
 
 			if (m_vertexBufferStruct->hasAttribute(TEXCOORD)) {
-				unsigned int i_uvInd = i_mesh->m_cyMesh->FT(i).v[j];
-				i_vertices.push_back(i_mesh->m_cyMesh->VT(i_uvInd).x);
-				i_vertices.push_back(1.0f - i_mesh->m_cyMesh->VT(i_uvInd).y);
+				unsigned int i_uvInd = i_meshWeakPtr.lock()->m_cyMesh->FT(i).v[j];
+				i_vertices.push_back(i_meshWeakPtr.lock()->m_cyMesh->VT(i_uvInd).x);
+				i_vertices.push_back(1.0f - i_meshWeakPtr.lock()->m_cyMesh->VT(i_uvInd).y);
 			}
 
 			if (m_vertexBufferStruct->hasAttribute(TANGENT)) {
@@ -185,80 +185,76 @@ std::shared_ptr<cMesh> cVertexShaderProgram::UploadMesh(const char* i_meshObjPat
 
 	if (!m_mappedBuffer) {
 		std::cerr << "ERROR: Persistent buffer not initialized!" << std::endl;
-		return nullptr;
 	}
 
 	if (m_VBOOffset + i_dataSize > m_bufferSize) { // BUFFER_SIZE should be total allocated buffer size
 		std::cerr << "ERROR: Not enough buffer space for mesh data!" << std::endl;
 		// TODO: expand the buffer
-		return nullptr;
 	}
 
 	memcpy(m_mappedBuffer + m_VBOOffset, i_vertices.data(), i_dataSize);
 
-	i_mesh->m_bufferOffset = m_VBOVerticeOffset;
+	i_meshWeakPtr.lock()->m_bufferOffset = m_VBOVerticeOffset;
 	m_VBOOffset += i_dataSize/sizeof(GLfloat);
-	m_VBOVerticeOffset += i_mesh->m_cyMesh->NF() * 3;
+	m_VBOVerticeOffset += i_meshWeakPtr.lock()->m_cyMesh->NF() * 3;
 
 
 	// upload textures
 	if (i_textureUsage->useAnyTexture()) {
 		// get and decode texture png
-		size_t i_lastSlash = std::string(i_meshObjPath).find_last_of("/\\");
-		std::string directory = (i_lastSlash == std::string::npos) ? "" : std::string(i_meshObjPath).substr(0, i_lastSlash + 1);
+		size_t i_lastSlash = std::string(i_meshWeakPtr.lock()->m_filePath).find_last_of("/\\");
+		std::string directory = (i_lastSlash == std::string::npos) ? "" : std::string(i_meshWeakPtr.lock()->m_filePath).substr(0, i_lastSlash + 1);
 
 		const char* i_textureFileName;
 
 		// ambient
 		if (i_textureUsage->useTexture(AMBIENT)) {
-			if (i_mesh->m_cyMesh->NM() == 0) {
+			if (i_meshWeakPtr.lock()->m_cyMesh->NM() == 0) {
 				i_textureFileName = "white.png";
 			}
 			else {
-				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ka.data;
+				i_textureFileName = i_meshWeakPtr.lock()->m_cyMesh->M(0).map_Ka.data;
 			}
 			if (!i_textureFileName) {
 				i_textureFileName = "white.png";
 			}
 			std::string i_texture = directory + std::string(i_textureFileName);
-			i_mesh->UploadPNGTexture(AMBIENT, i_texture);
+			i_meshWeakPtr.lock()->UploadPNGTexture(AMBIENT, i_texture);
 		}
 		// diffuse
 		if (i_textureUsage->useTexture(DIFFUSE)) {
-			if (i_mesh->m_cyMesh->NM() == 0) {
+			if (i_meshWeakPtr.lock()->m_cyMesh->NM() == 0) {
 				i_textureFileName = "white.png";
 			}
 			else {
-				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Kd.data;
+				i_textureFileName = i_meshWeakPtr.lock()->m_cyMesh->M(0).map_Kd.data;
 			}
 			if (!i_textureFileName) {
 				i_textureFileName = "white.png";
 			}
 			std::string i_texture = directory + std::string(i_textureFileName);
-			i_mesh->UploadPNGTexture(DIFFUSE, i_texture);
+			i_meshWeakPtr.lock()->UploadPNGTexture(DIFFUSE, i_texture);
 		}
 		// specular
 		if (i_textureUsage->useTexture(SPECULAR)) {
-			if (i_mesh->m_cyMesh->NM() == 0) {
+			if (i_meshWeakPtr.lock()->m_cyMesh->NM() == 0) {
 				i_textureFileName = "grey.png";
 			}
 			else {
-				i_textureFileName = i_mesh->m_cyMesh->M(0).map_Ks.data;
+				i_textureFileName = i_meshWeakPtr.lock()->m_cyMesh->M(0).map_Ks.data;
 			}
 			if (!i_textureFileName) {
 				i_textureFileName = "grey.png";
 			}
 			std::string i_texture = directory + std::string(i_textureFileName);
-			i_mesh->UploadPNGTexture(SPECULAR, i_texture);
+			i_meshWeakPtr.lock()->UploadPNGTexture(SPECULAR, i_texture);
 		}
 	}
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	std::weak_ptr<cMesh> i_weakptr = i_mesh;
-	m_meshes.push_back(i_weakptr);
-	return i_mesh;
+	m_meshes.push_back(i_meshWeakPtr);
 }
 
 void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
