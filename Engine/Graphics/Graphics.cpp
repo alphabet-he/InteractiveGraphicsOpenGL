@@ -5,7 +5,7 @@ void cMesh::UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_te
 {
 	std::ifstream file(i_textureFilePath);
 	if (!file.good()) {
-		i_textureFilePath = "Assets/white.png";
+		i_textureFilePath = "../Assets/white.png";
 	}
 
 	std::vector<unsigned char> image;
@@ -455,11 +455,11 @@ void cVertexShaderProgram::InitializeGeometryShaderProgram()
 		cy::GLSLShader* i_tes = new cy::GLSLShader();
 		cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
 		cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
-		i_vertexShader->CompileFile("Assets/shader/StandardTessellationVertexShader.glsl", GL_VERTEX_SHADER);
-		i_tcs->CompileFile("Assets/shader/StandardTessellationControlShader.glsl", GL_TESS_CONTROL_SHADER);
-		i_tes->CompileFile("Assets/shader/StandardTessellationEvaluationShader.glsl", GL_TESS_EVALUATION_SHADER);
-		i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
-		i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+		i_vertexShader->CompileFile("../Assets/shader/StandardTessellationVertexShader.glsl", GL_VERTEX_SHADER);
+		i_tcs->CompileFile("../Assets/shader/StandardTessellationControlShader.glsl", GL_TESS_CONTROL_SHADER);
+		i_tes->CompileFile("../Assets/shader/StandardTessellationEvaluationShader.glsl", GL_TESS_EVALUATION_SHADER);
+		i_geometryShader->CompileFile("../Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
+		i_fragmentShader->CompileFile("../Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
 		m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
 		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
 		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_tcs->GetID());
@@ -481,9 +481,9 @@ void cVertexShaderProgram::InitializeGeometryShaderProgram()
 		cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 		cy::GLSLShader* i_geometryShader = new cy::GLSLShader();
 		cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
-		i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
-		i_geometryShader->CompileFile("Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
-		i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+		i_vertexShader->CompileFile("../Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
+		i_geometryShader->CompileFile("../Assets/shader/StandardGeometryShader.glsl", GL_GEOMETRY_SHADER);
+		i_fragmentShader->CompileFile("../Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
 		m_geometryShaderProgram->m_shaderProgram = glCreateProgram();
 		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_vertexShader->GetID());
 		glAttachShader(m_geometryShaderProgram->m_shaderProgram, i_geometryShader->GetID());
@@ -656,8 +656,8 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	// create shader program for shadow map
 	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
-	i_vertexShader->CompileFile("Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
-	i_fragmentShader->CompileFile("Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+	i_vertexShader->CompileFile("../Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile("../Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
 	m_shadowMapInfo->m_shadowShaderProgram = glCreateProgram();
 	glAttachShader(m_shadowMapInfo->m_shadowShaderProgram, i_vertexShader->GetID());
 	glAttachShader(m_shadowMapInfo->m_shadowShaderProgram, i_fragmentShader->GetID());
@@ -809,7 +809,7 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 cEnvironmentShaderProgram::cEnvironmentShaderProgram()
 {
 	m_environmentCube = new cy::TriMesh();
-	m_environmentCube->LoadFromFileObj("Assets/background/cube.obj");
+	m_environmentCube->LoadFromFileObj("../Assets/background/cube.obj");
 
 	std::vector<GLfloat> i_vertices;
 
@@ -835,7 +835,7 @@ cEnvironmentShaderProgram::cEnvironmentShaderProgram()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	LinkShaders("Assets/background/EnvCubeVertexShader.glsl", "Assets/background/EnvCubeFragmentShader.glsl");
+	LinkShaders("../Assets/background/EnvCubeVertexShader.glsl", "../Assets/background/EnvCubeFragmentShader.glsl");
 }
 
 bool cEnvironmentShaderProgram::UploadEnvironmentTexture(std::vector<std::string> i_fileNames)
@@ -882,7 +882,7 @@ GLuint Graphics::GenerateTextureFromImage(std::string i_textureFilePath)
 {
 	std::ifstream file(i_textureFilePath);
 	if (!file.good()) {
-		i_textureFilePath = "Assets/white.png";
+		i_textureFilePath = "../Assets/white.png";
 	}
 
 	std::vector<unsigned char> image;

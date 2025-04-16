@@ -1,5 +1,6 @@
 #include "cMyApplication.h"
 #include <CyCode/cyTriMesh.h>
+#include <filesystem>
 
 cMyApplication::cMyApplication()
 {
@@ -14,6 +15,7 @@ cMyApplication::cMyApplication()
 
 void cMyApplication::CustomInitialization()
 {
+
 	// display program
 	{
 		sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, false);
@@ -26,7 +28,7 @@ void cMyApplication::CustomInitialization()
 			(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
 			0.1f, 100.0f  // Near & Far plane
 		);
-		m_displayProgram->LinkShaders("Assets/shader/TextureVertexShader.glsl", "Assets/shader/TextureBlinnFragmentShader.glsl");
+		m_displayProgram->LinkShaders("../Assets/shader/TextureVertexShader.glsl", "../Assets/shader/TextureBlinnFragmentShader.glsl");
 
 		m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 		m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -38,9 +40,9 @@ void cMyApplication::CustomInitialization()
 	{
 
 		m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, false, false, false));
-		m_lightProgram->LinkShaders("Assets/shader/StandardVertexShader.glsl", "Assets/shader/StandardFragmentShader.glsl");
+		m_lightProgram->LinkShaders("../Assets/shader/StandardVertexShader.glsl", "../Assets/shader/StandardFragmentShader.glsl");
 
-		sMeshInstance* i_light = m_meshSystem->RegisterMesh("Assets/sphere.obj");
+		sMeshInstance* i_light = m_meshSystem->RegisterMesh("../Assets/sphere.obj");
 		m_lightMesh = i_light->GetMesh();
 		m_lightProgram->UploadMesh(m_lightMesh, new sTextureUsage(false, false, false));
 		{
@@ -58,8 +60,8 @@ void cMyApplication::CustomInitialization()
 	// initialize m_fileNameModelPairs
 	std::vector<sMeshInstance*> i_meshInstances;
 	{
-		sMeshInstance* i_planeInstance = m_tempMeshSystem->RegisterMesh("Assets/plane.obj");
-		sMeshInstance* i_teapotInstance = m_tempMeshSystem->RegisterMesh("Assets/teapot/teapot.obj");
+		sMeshInstance* i_planeInstance = m_tempMeshSystem->RegisterMesh("../Assets/plane.obj");
+		sMeshInstance* i_teapotInstance = m_tempMeshSystem->RegisterMesh("../Assets/teapot/teapot.obj");
 		glm::mat4 i_planeModelMat = glm::mat4(1.0f);
 		glm::mat4 i_teapotModelMat = glm::mat4(1.0f);
 		// plane model mat
@@ -77,9 +79,9 @@ void cMyApplication::CustomInitialization()
 			i_teapotModelMat = glm::translate(i_teapotModelMat, -i_center);
 		}
 
-		m_fileNameModelPairs.push_back({ "Assets/plane.obj", i_planeModelMat });
-		m_fileNameModelPairs.push_back({ "Assets/teapot/teapot.obj", i_teapotModelMat });
-		m_fileNameModelPairs.push_back({ "Assets/sprite/Mario.png", i_planeModelMat });
+		m_fileNameModelPairs.push_back({ "../Assets/plane.obj", i_planeModelMat });
+		m_fileNameModelPairs.push_back({ "../Assets/teapot/teapot.obj", i_teapotModelMat });
+		m_fileNameModelPairs.push_back({ "../Assets/sprite/Mario.png", i_planeModelMat });
 
 		i_meshInstances.push_back(i_planeInstance);
 		i_meshInstances.push_back(i_teapotInstance);
@@ -97,7 +99,7 @@ void cMyApplication::CustomInitialization()
 			0.1f, 100.0f  // Near & Far plane
 		);
 		i_projectionMat[1][1] *= -1.0f;
-		i_uiObjectProgram->LinkShaders("Assets/shader/TextureVertexShader.glsl", "Assets/shader/TextureFragmentShader.glsl");
+		i_uiObjectProgram->LinkShaders("../Assets/shader/TextureVertexShader.glsl", "../Assets/shader/TextureFragmentShader.glsl");
 
 		i_uiObjectProgram->SetMVPMatrix(i_projectionMat, PROJECTION);
 
@@ -145,9 +147,9 @@ void cMyApplication::CustomInitialization()
 	{
 		sPanel* i_panel = new sPanel("Transformation", m_windowWidth - 176, 0, 160, 160, 1, 1, 1, 0.1);
 		std::vector<std::vector<std::string>> i_uiAssets;
-		std::vector<std::string> i_move = { "Assets/ui/movex.png", "Assets/ui/movey.png", "Assets/ui/movez.png" };
-		std::vector<std::string> i_rotate = { "Assets/ui/rotatex.png", "Assets/ui/rotatey.png", "Assets/ui/rotatez.png" };
-		std::vector<std::string> i_scale = { "Assets/ui/scale.png"};
+		std::vector<std::string> i_move = { "../Assets/ui/movex.png", "../Assets/ui/movey.png", "../Assets/ui/movez.png" };
+		std::vector<std::string> i_rotate = { "../Assets/ui/rotatex.png", "../Assets/ui/rotatey.png", "../Assets/ui/rotatez.png" };
+		std::vector<std::string> i_scale = { "../Assets/ui/scale.png"};
 		i_uiAssets = { i_move, i_rotate, i_scale };
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
@@ -234,7 +236,7 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			const char* i_meshName;
 			if (i_filename.compare(i_filename.length() - 4, 4, ".png") == 0) {
 				b_isPng = true;
-				i_meshName = "Assets/plane.obj";
+				i_meshName = "../Assets/plane.obj";
 			}
 			else {
 				i_meshName = i_filename.c_str();
