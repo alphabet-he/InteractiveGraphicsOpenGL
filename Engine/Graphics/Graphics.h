@@ -46,7 +46,8 @@ public:
 	std::map<eTextureUsageFlags, GLuint> m_textureBinding;
 	size_t m_bufferOffset;
 	glm::mat4 m_modelMat; //TODO: Change accessibility
-	const char* m_filePath;
+	std::string m_filePath;
+	std::map<eTextureUsageFlags, std::string> m_textureFiles;
 
 public:
 	cMesh() :m_cyMesh(nullptr), m_bufferOffset(0) {
@@ -57,6 +58,7 @@ public:
 	void UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_textureFilePath);
 	inline void UploadTexture(GLuint i_tex, eTextureUsageFlags i_flag) {
 		m_textureBinding[i_flag] = i_tex;
+		m_textureFiles[i_flag] = "";
 	};
 	inline void SetModelMat(const glm::mat4& i_model) { m_modelMat = i_model; };
 };
@@ -130,6 +132,8 @@ protected:
 	sShadowMapInfo* m_shadowMapInfo = nullptr;
 	sGeometryShaderProgram* m_geometryShaderProgram = nullptr;
 
+	std::string m_vertexShaderPath, m_fragmentShaderPath;
+
 private:
 	size_t m_VBOOffset;
 	size_t m_VBOVerticeOffset;
@@ -184,6 +188,14 @@ public:
 	// directional light
 	GLuint RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
 		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane);
+
+	inline std::string GetVertexShaderPath() {
+		return m_vertexShaderPath;
+	}
+
+	inline std::string GetFragmentShaderPath() {
+		return m_fragmentShaderPath;
+	}
 
 private:
 	// Helper functions

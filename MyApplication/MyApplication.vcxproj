@@ -106,10 +106,9 @@
 Gdi32.lib;
 Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,10 +131,9 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)
 Gdi32.lib;
 Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -154,10 +152,9 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)
 Gdi32.lib;
 Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -180,10 +177,9 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)
 Gdi32.lib;
 Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\FreeGLUT\out\build\$(Platform)-Debug\bin\freeglutd.dll" "$(OutDir)"
-xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
-xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -202,6 +198,7 @@ xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)
     <ClCompile Include="EntryPoint.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\External\JSON\json.hpp" />
     <ClInclude Include="cMyApplication.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

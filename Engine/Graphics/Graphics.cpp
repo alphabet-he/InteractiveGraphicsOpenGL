@@ -46,6 +46,8 @@ void cMesh::UploadPNGTexture(eTextureUsageFlags i_textureUsage, std::string i_te
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, i_wrapModeT);
 
 	m_textureBinding[i_textureUsage] = TexInt;
+
+	m_textureFiles[i_textureUsage] = i_textureFilePath;
 }
 
 cVertexShaderProgram::cVertexShaderProgram()
@@ -260,6 +262,9 @@ void cVertexShaderProgram::UploadMesh(std::weak_ptr<cMesh> i_meshWeakPtr, sTextu
 void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char const* i_fragmentShaderFilename)
 {
 	ResetShaderProgram();
+
+	m_vertexShaderPath = i_vertexShaderFilename;
+	m_fragmentShaderPath = i_fragmentShaderFilename;
 
 	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
@@ -718,6 +723,9 @@ void cVertexShaderProgram::ResetShaderProgram()
 	glDeleteProgram(m_shaderProgram);
 
 	b_useTessellation = false;
+
+	m_vertexShaderPath = "";
+	m_fragmentShaderPath = "";
 }
 
 void cVertexShaderProgram::GetShaderUniforms()

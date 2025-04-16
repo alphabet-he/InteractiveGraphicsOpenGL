@@ -1,5 +1,6 @@
 #include "cMyApplication.h"
 #include <CyCode/cyTriMesh.h>
+#include <JSON/json.hpp>
 #include <filesystem>
 
 cMyApplication::cMyApplication()
@@ -206,7 +207,7 @@ void cMyApplication::CustomInitialization()
 
 	// switching panel ui
 	{
-		sPanel* i_panel = new sPanel("Switching Panel", 0, m_windowHeight - 128 - 32, 158, 32, 1, 1, 1, 0.1);
+		sPanel* i_panel = new sPanel("SwitchingPanel", 0, m_windowHeight - 128 - 32, 158, 32, 1, 1, 1, 0.1);
 		sButton* i_meshButton = new sButton(
 			0, 0,
 			64, 32,
@@ -229,6 +230,21 @@ void cMyApplication::CustomInitialization()
 		i_panel->m_components.push_back(i_spriteButton);
 		m_UiSystem->AddPanel(i_panel);
 	}
+
+	// export ui
+	{
+		sPanel* i_panel = new sPanel("ExportPanel", 0, 0, 64, 32, 1, 1, 1, 0.1);
+		sButton* i_Button = new sButton(
+			0, 0,
+			64, 32,
+			"Export",
+			[this]() {
+				Export();
+			}
+		);
+		i_panel->m_components.push_back(i_Button);
+		m_UiSystem->AddPanel(i_panel);
+	}
 }
 
 void cMyApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -249,19 +265,19 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 {
 	if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 		if (action == GLFW_PRESS && !m_input_rightMouseButton) {
-			m_input_leftMouseButton = true;
+			m_input_middleMouseButton = true;
 			glfwGetCursorPos(window, &m_input_mouseLocationWhenPressedX, &m_input_mouseLocationWhenPressedY);
 			m_viewMatWhenPressed = m_viewMat;
 			return;
 		}
 		if (action == GLFW_RELEASE) {
-			m_input_leftMouseButton = false;
+			m_input_middleMouseButton = false;
 			return;
 		}
 	}
 
 	if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-		if (action == GLFW_PRESS && !m_input_leftMouseButton) {
+		if (action == GLFW_PRESS && !m_input_middleMouseButton) {
 			m_input_rightMouseButton = true;
 			glfwGetCursorPos(window, &m_input_mouseLocationWhenPressedX, &m_input_mouseLocationWhenPressedY);
 			m_viewMatWhenPressed = m_viewMat;
@@ -343,14 +359,67 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 
 void cMyApplication::Export()
 {
+	using json = nlohmann::json;
 
+	json sceneJson;
+
+	m_meshSystem->ForEachMesh([&sceneJson, this](sMeshInstance* i_mesh) {
+		
+		std::weak_ptr<cMesh> i = i_mesh->GetMesh();
+		if (auto i_meshPtr = i.lock()) {
+			json i_meshJson;
+			std::filesystem::path utf8_path = i_meshPtr->m_filePath;
+			i_meshJson["file"] = utf8_path.u8string();
+
+			// flatten model matrix to 16-element array
+			std::vector<float> matArray(16);
+			const float* matPtr = glm::value_ptr(i_meshPtr->m_modelMat);
+			for (int i = 0; i < 16; ++i) {
+				matArray[i] = matPtr[i];
+			}
+			i_meshJson["model_mat"] = matArray;
+
+			// category
+			if (i.lock() == m_lightMesh.lock()) {
+				i_meshJson["category"] = "light";
+			}
+			else if (i.lock() == m_playerMesh.lock()) {
+				i_meshJson["category"] = "player";
+			}
+			else {
+				i_meshJson["category"] = "mesh";
+			}
+
+			json i_texturesJson;
+			for (const auto& [usage, path] : i_meshPtr->m_textureFiles) {
+				std::filesystem::path utf8_path = path;
+				i_texturesJson[std::to_string(static_cast<int>(usage))] = utf8_path.u8string();
+			}
+			i_meshJson["textures"] = i_texturesJson;
+
+			sceneJson["meshes"].push_back(i_meshJson);
+		}
+		
+		});
+
+	sceneJson["vertex_shader"] = m_displayProgram->GetVertexShaderPath();
+	sceneJson["fragment_shader"] = m_displayProgram->GetFragmentShaderPath();
+
+	std::ofstream file("../Export/scene.json");
+	if (!file) {
+		std::cerr << "Failed to open output file\n";
+		return;
+	}
+
+	file << sceneJson.dump(4);
+	file.close();
 }
 
 void cMyApplication::MainLoopFunc()
 {
 	// input
 	{
-		if (m_input_leftMouseButton) {
+		if (m_input_middleMouseButton) {
 			double i_mousePos_x = INT_MIN;
 			double i_mousePos_y = INT_MIN;
 			glfwGetCursorPos(m_applicationWindow, &i_mousePos_x, &i_mousePos_y);

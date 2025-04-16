@@ -4,6 +4,9 @@
 
 class cViewerApplication : public iApplication
 {
+public:
+	cViewerApplication();
+
 private:
 	void CustomInitialization() override;
 	void MainLoopFunc() override;
@@ -14,7 +17,7 @@ private:
 
 	cVertexShaderProgram* m_displayProgram;
 
-	bool m_input_leftMouseButton = false;
+	bool m_input_middleMouseButton = false;
 	bool m_input_rightMouseButton = false;
 	double m_input_mouseLocationWhenPressedX = INT_MIN;
 	double m_input_mouseLocationWhenPressedY = INT_MIN;
@@ -24,6 +27,8 @@ private:
 	glm::mat4 m_projectionMat;
 
 	glm::vec3 m_lightPos;
+
+	std::weak_ptr<cMesh> m_playerMesh;
 
 	cMeshSystem* m_meshSystem;
 };

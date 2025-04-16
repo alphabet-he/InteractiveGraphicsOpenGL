@@ -9,6 +9,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{eb762b1f-5684-4eb8-b972-bf1ff718e7e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cMyApplication.cpp">
@@ -21,6 +24,9 @@
   <ItemGroup>
     <ClInclude Include="cMyApplication.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\External\JSON\json.hpp">
+      <Filter>External</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

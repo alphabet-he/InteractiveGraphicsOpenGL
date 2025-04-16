@@ -30,6 +30,12 @@ public:
 
 	void DeleteMesh(sMeshInstance* i_mesh);
 
+	void ForEachMesh(const std::function<void(sMeshInstance*)>& func) const {
+		for (const auto& mesh : m_meshList) {
+			func(mesh.get());
+		}
+	}
+
 private:
 	bool IntersectRayAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir,
 		const glm::vec3& boxMin, const glm::vec3& boxMax,

@@ -31,7 +31,7 @@ private:
 	cVertexShaderProgram* m_displayProgram;
 	cVertexShaderProgram* m_lightProgram;
 
-	bool m_input_leftMouseButton = false;
+	bool m_input_middleMouseButton = false;
 	bool m_input_rightMouseButton = false;
 	double m_input_mouseLocationWhenPressedX = INT_MIN;
 	double m_input_mouseLocationWhenPressedY = INT_MIN;
