@@ -58,13 +58,24 @@ void cUserInterfaceSystem::DrawUI()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void sButton::Render()
+void sImageButton::Render()
 {
 	ImGui::SetCursorPos(m_position);
 	std::string button_id = "##button_" + std::to_string(reinterpret_cast<uintptr_t>(this));
 	if (ImGui::ImageButton(button_id.c_str(), m_texture, m_size)) {
 		if (m_callback) {
 			m_callback(); 
+		}
+	}
+}
+
+void sButton::Render()
+{
+	ImGui::SetCursorPos(ImVec2(m_position));
+
+	if (ImGui::Button(m_text.c_str(), m_size)) {
+		if (m_callback) {
+			m_callback();
 		}
 	}
 }

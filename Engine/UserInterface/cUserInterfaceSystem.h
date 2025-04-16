@@ -21,9 +21,23 @@ struct sUIComponent {
 	virtual void Render() = 0;
 };
 
-struct sButton : sUIComponent {
+struct sButton :sUIComponent {
 	std::function<void()> m_callback;
+	std::string m_text;
 	sButton(float i_positionX, float i_positionY,
+		float i_sizeX, float i_sizeY,
+		std::string i_text,
+		std::function<void()> i_callback)
+		: sUIComponent(i_positionX, i_positionY, i_sizeX, i_sizeY, -1),
+		m_text(i_text),
+		m_callback(std::move(i_callback)) {}
+
+	void Render() override;
+};
+
+struct sImageButton : sUIComponent {
+	std::function<void()> m_callback;
+	sImageButton(float i_positionX, float i_positionY,
 		float i_sizeX, float i_sizeY,
 		GLuint i_textureID,
 		std::function<void()> i_callback)

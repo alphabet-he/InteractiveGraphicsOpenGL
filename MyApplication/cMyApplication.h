@@ -1,6 +1,5 @@
 #pragma once
 #include <Application/iApplication.h>
-#include <Graphics/Graphics.h>
 #include <Assets/cMeshManager.h>
 
 enum eTransformation {
@@ -42,41 +41,48 @@ private:
 	glm::mat4 m_projectionMat;
 
 	std::weak_ptr<cMesh> m_lightMesh;
+	std::weak_ptr<cMesh> m_playerMesh;
 
 	/*
 	* 
 	*/
 	cMeshSystem* m_meshSystem;
-	cMeshSystem* m_tempMeshSystem;
 
 	std::vector<std::pair<std::string, glm::mat4>> m_fileNameModelPairs;
+	std::vector<std::string> m_playerSprites;
 	int m_newMeshSelected = -1;
+	int m_newPlayerSpriteSelected = -1;
 
 	sMeshInstance* m_selectedMesh = nullptr;
 
 	eTransformation m_transformationAction = COUNT;
 
+	sPanel* m_meshSelectionPanel;
+	sPanel* m_spriteSelectionPanel;
+
+	glm::mat4 m_spritePlaneModelMat;
+
 };
 
-struct sMeshSelectionButton :sButton {
+struct sMeshSelectionButton :sImageButton {
 	int m_selectionInd = -1;
 	sMeshSelectionButton(float i_positionX, float i_positionY,
 		float i_sizeX, float i_sizeY,
 		GLuint i_textureID,
 		int i_selectionInd,
 		std::function<void()> i_callback)
-		: sButton(i_positionX, i_positionY, i_sizeX, i_sizeY, i_textureID, i_callback),
+		: sImageButton(i_positionX, i_positionY, i_sizeX, i_sizeY, i_textureID, i_callback),
 		m_selectionInd(i_selectionInd) {}
 };
 
-struct sTransformationButton :sButton {
+struct sTransformationButton :sImageButton {
 	eTransformation m_transformation = COUNT;
 	sTransformationButton(float i_positionX, float i_positionY,
 		float i_sizeX, float i_sizeY,
 		GLuint i_textureID,
 		int i_transformation,
 		std::function<void()> i_callback)
-		: sButton(i_positionX, i_positionY, i_sizeX, i_sizeY, i_textureID, i_callback),
+		: sImageButton(i_positionX, i_positionY, i_sizeX, i_sizeY, i_textureID, i_callback),
 		m_transformation(static_cast<eTransformation>(i_transformation)) {}
 };
 

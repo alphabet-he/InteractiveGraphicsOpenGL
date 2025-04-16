@@ -9,7 +9,7 @@ cMyApplication::cMyApplication()
 	m_windowTitle = "Junxuan's OpenGL Application";
 
 	m_meshSystem = new cMeshSystem();
-	m_tempMeshSystem = new cMeshSystem();
+	
 }
 
 
@@ -48,7 +48,7 @@ void cMyApplication::CustomInitialization()
 		{
 			glm::mat4 i_ModelMat = glm::mat4(1.0f);
 			i_ModelMat = glm::translate(i_ModelMat, glm::vec3(0.8f, 1.2f, 1.0f));
-			i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.05f));
+			i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.02f));
 			m_lightMesh.lock()->SetModelMat(i_ModelMat);
 		}
 		m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
@@ -59,7 +59,9 @@ void cMyApplication::CustomInitialization()
 
 	// initialize m_fileNameModelPairs
 	std::vector<sMeshInstance*> i_meshInstances;
+	cMeshSystem* m_tempMeshSystem = new cMeshSystem();
 	{
+		
 		sMeshInstance* i_planeInstance = m_tempMeshSystem->RegisterMesh("../Assets/plane.obj");
 		sMeshInstance* i_teapotInstance = m_tempMeshSystem->RegisterMesh("../Assets/teapot/teapot.obj");
 		glm::mat4 i_planeModelMat = glm::mat4(1.0f);
@@ -67,9 +69,10 @@ void cMyApplication::CustomInitialization()
 		// plane model mat
 		{
 			glm::vec3 i_center = (i_planeInstance->m_boundingBoxMax + i_planeInstance->m_boundingBoxMin) * 0.5f;
-			i_planeModelMat = glm::scale(i_planeModelMat, glm::vec3(1.5f));
+			i_planeModelMat = glm::scale(i_planeModelMat, glm::vec3(1.0f));
 			i_planeModelMat = glm::rotate(i_planeModelMat, glm::radians(90.0f), glm::vec3(1, 0, 0));
 			i_planeModelMat = glm::translate(i_planeModelMat, -i_center);
+			m_spritePlaneModelMat = glm::scale(glm::mat4(1.0f), glm::vec3(0.8f)) * i_planeModelMat;
 		}
 		// teapot model mat
 		{
@@ -81,14 +84,14 @@ void cMyApplication::CustomInitialization()
 
 		m_fileNameModelPairs.push_back({ "../Assets/plane.obj", i_planeModelMat });
 		m_fileNameModelPairs.push_back({ "../Assets/teapot/teapot.obj", i_teapotModelMat });
-		m_fileNameModelPairs.push_back({ "../Assets/sprite/Mario.png", i_planeModelMat });
+		m_fileNameModelPairs.push_back({ "../Assets/sprite/ditto.png", i_planeModelMat });
 
 		i_meshInstances.push_back(i_planeInstance);
 		i_meshInstances.push_back(i_teapotInstance);
 		i_meshInstances.push_back(i_planeInstance);
 	}
 
-	// ui program
+	// ui program for mesh selection
 	{
 		sVertexBufferStruct* i_displayBufferStruct = new sVertexBufferStruct(true, true, true, false);
 		cVertexShaderProgram* i_uiObjectProgram = new cVertexShaderProgram(i_displayBufferStruct);
@@ -105,7 +108,7 @@ void cMyApplication::CustomInitialization()
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-		sPanel* i_panel = new sPanel("MeshSelection", 0, m_windowHeight - 128, m_windowWidth, 128, 1, 1, 1, 0.1);
+		m_meshSelectionPanel = new sPanel("MeshSelection", 0, m_windowHeight - 128, m_windowWidth, 128, 1, 1, 1, 0.1);
 
 		for (int i = 0; i < m_fileNameModelPairs.size(); i++) {
 			std::pair<std::string, glm::mat4> i_file = m_fileNameModelPairs[i];
@@ -137,10 +140,10 @@ void cMyApplication::CustomInitialization()
 			i_button->m_callback = [this, i_button]() {
 				m_newMeshSelected = i_button->m_selectionInd;
 				};
-			i_panel->m_components.push_back(i_button);
+			m_meshSelectionPanel->m_components.push_back(i_button);
 		}
 
-		m_UiSystem->AddPanel(i_panel);
+		m_UiSystem->AddPanel(m_meshSelectionPanel);
 	}
 
 	// transformation ui
@@ -172,6 +175,58 @@ void cMyApplication::CustomInitialization()
 				}
 			}
 		}
+		m_UiSystem->AddPanel(i_panel);
+	}
+
+	// player sprite selection ui
+	{
+		m_playerSprites = { "../Assets/sprite/Mario.png", "../Assets/sprite/ditto.png" };
+		m_spriteSelectionPanel = new sPanel("SpriteSelection", 0, m_windowHeight - 128, m_windowWidth, 128, 1, 1, 1, 0.1);
+		for (int i = 0; i < m_playerSprites.size(); i++) {
+			GLuint i_objTexture = Graphics::GenerateTextureFromImage(m_playerSprites[i]);
+			sMeshSelectionButton* i_button = new sMeshSelectionButton(
+				32 * (i + 1) + 64 * i,
+				32, 64, 64,
+				i_objTexture,
+				i,
+				nullptr
+			);
+
+			// capture i_button and this
+			i_button->m_callback = [this, i_button]() {
+				if (!m_playerMesh.lock()) {
+					m_newPlayerSpriteSelected = i_button->m_selectionInd;
+				}
+				};
+			m_spriteSelectionPanel->m_components.push_back(i_button);
+		}
+		m_spriteSelectionPanel->b_active = false;
+		m_UiSystem->AddPanel(m_spriteSelectionPanel);
+	}
+
+	// switching panel ui
+	{
+		sPanel* i_panel = new sPanel("Switching Panel", 0, m_windowHeight - 128 - 32, 158, 32, 1, 1, 1, 0.1);
+		sButton* i_meshButton = new sButton(
+			0, 0,
+			64, 32,
+			"Mesh",
+			[this]() {
+				m_spriteSelectionPanel->b_active = false;
+				m_meshSelectionPanel->b_active = true;
+			}
+		);
+		sButton* i_spriteButton = new sButton(
+			64, 0,
+			94, 32,
+			"PlayerPawn",
+			[this]() {
+				m_meshSelectionPanel->b_active = false;
+				m_spriteSelectionPanel->b_active = true;
+			}
+		);
+		i_panel->m_components.push_back(i_meshButton);
+		i_panel->m_components.push_back(i_spriteButton);
 		m_UiSystem->AddPanel(i_panel);
 	}
 }
@@ -230,8 +285,15 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			m_viewMat, m_projectionMat, i_viewport);
 		glm::vec3 rayDir = glm::normalize(rayEnd - rayStart);
 
-		if (m_newMeshSelected != -1) {
-			std::string i_filename = m_fileNameModelPairs[m_newMeshSelected].first;
+		if (m_newMeshSelected != -1 || m_newPlayerSpriteSelected != -1) {
+
+			std::string i_filename;
+			if (m_newMeshSelected != -1) {
+				i_filename = m_fileNameModelPairs[m_newMeshSelected].first;
+			}
+			else {
+				i_filename = m_playerSprites[m_newPlayerSpriteSelected];
+			}
 			bool b_isPng = false;
 			const char* i_meshName;
 			if (i_filename.compare(i_filename.length() - 4, 4, ".png") == 0) {
@@ -245,7 +307,14 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			sMeshInstance* i_instance = m_meshSystem->RegisterMesh(i_meshName);
 			m_displayProgram->UploadMesh(i_instance->GetMesh(), new sTextureUsage(false, true, false));
 			{
-				glm::mat4 i_model = m_fileNameModelPairs[m_newMeshSelected].second;
+				glm::mat4 i_model;
+				if (b_isPng) {
+					i_model = m_spritePlaneModelMat;
+				}
+				else {
+					i_model = m_fileNameModelPairs[m_newMeshSelected].second;
+				}
+				
 				glm::vec3 i_worldPos = rayStart + rayDir * 5.0f;
 				i_model = glm::translate(i_model, i_worldPos);
 				i_instance->GetMesh().lock()->SetModelMat(i_model);
@@ -253,7 +322,11 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			if (b_isPng) {
 				i_instance->GetMesh().lock()->UploadPNGTexture(FLAT_SPRITE, i_filename);
 			}
+			if (m_newPlayerSpriteSelected != -1) {
+				m_playerMesh = i_instance->GetMesh();
+			}
 			m_newMeshSelected = -1;
+			m_newPlayerSpriteSelected = -1;
 		}
 		else {
 			sMeshInstance* i = m_meshSystem->SelectMesh(rayStart, rayDir);
