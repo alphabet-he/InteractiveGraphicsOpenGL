@@ -916,9 +916,9 @@ void cVertexShaderProgram::DrawCallWithGBuffer()
 				indexStr = "ShadowMap[" + std::to_string(i) + "]";
 				GLint shadowMapPos = glGetUniformLocation(m_shaderProgram, indexStr.c_str());
 
-				glActiveTexture(GL_TEXTURE0 + i_textureUnit);  // use current texture unit
+				glActiveTexture(GL_TEXTURE4 + i_textureUnit);  // use current texture unit
 				glBindTexture(GL_TEXTURE_2D, m_shadowMapInfo->m_multiLightsDataArray[i].second);  // shadow texture ID
-				glUniform1i(shadowMapPos, i_textureUnit);  // tell shader to use this unit
+				glUniform1i(shadowMapPos, i_textureUnit + 4);  // tell shader to use this unit
 				i_textureUnit++;  // increment after binding
 			}
 		}
@@ -989,8 +989,8 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	// create shader program for shadow map
 	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
 	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
-	i_vertexShader->CompileFile("../Assets/shader/StandardVertexShader.glsl", GL_VERTEX_SHADER);
-	i_fragmentShader->CompileFile("../Assets/shader/StandardFragmentShader.glsl", GL_FRAGMENT_SHADER);
+	i_vertexShader->CompileFile("../Assets/shader/VoidVertexShader.glsl", GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile("../Assets/shader/VoidFragmentShader.glsl", GL_FRAGMENT_SHADER);
 	m_shadowMapInfo->m_shadowShaderProgram = glCreateProgram();
 	glAttachShader(m_shadowMapInfo->m_shadowShaderProgram, i_vertexShader->GetID());
 	glAttachShader(m_shadowMapInfo->m_shadowShaderProgram, i_fragmentShader->GetID());
@@ -1005,6 +1005,13 @@ void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_heig
 	
 	glUseProgram(m_shaderProgram);
 	m_shadowMapInfo->m_shadowMapTexPosition = glGetUniformLocation(m_shaderProgram, "shadow_map");
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Shadow map FBO not complete!" << std::endl;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 }
 
@@ -1145,51 +1152,36 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 		return 0;
 	}
 
-	GLuint depthMapTex;
-	glGenTextures(1, &depthMapTex);
-	glBindTexture(GL_TEXTURE_2D, depthMapTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight,
-		0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-	// Create new FBO
-	GLuint depthFBO;
-	glGenFramebuffers(1, &depthFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTex, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cerr << "Framebuffer not complete!" << std::endl;
-	}
-
-	// Now render shadow map
-	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_shadowMapInfo->m_FBO);
 
 	glUseProgram(m_shadowMapInfo->m_shadowShaderProgram);
-	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat, 1, GL_FALSE, glm::value_ptr(i_viewMatrix));
-	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat, 1, GL_FALSE, glm::value_ptr(i_projMatrix));
+
+	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glClear(GL_DEPTH_BUFFER_BIT); // Only depth
+
+	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat,
+		1, GL_FALSE, glm::value_ptr(i_viewMatrix));
+	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat,
+		1, GL_FALSE, glm::value_ptr(i_projMatrix));
 
 	glBindVertexArray(m_VAO);
-	for (auto& mesh : m_meshes) {
-		if (auto i_mesh = mesh.lock()) {
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i_mesh = it->lock()) {
 			glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderModelMat, 1, GL_FALSE, glm::value_ptr(i_mesh->m_modelMat));
 			glDrawArrays(GL_TRIANGLES, i_mesh->m_bufferOffset, i_mesh->m_cyMesh->NF() * 3);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
 		}
 	}
 	glBindVertexArray(0);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	return depthMapTex;
+	return m_shadowMapInfo->m_texture;
 }
 
 cEnvironmentShaderProgram::cEnvironmentShaderProgram()

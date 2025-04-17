@@ -27,7 +27,7 @@ void cViewerApplication::CustomInitialization()
         );
 
         m_displayProgram->LinkShaders("../Assets/shader/ScreenQuadVertexShader.glsl", "../Assets/shader/ScreenQuadMultiLightsShadowFragShader.glsl");
-        //m_displayProgram->LinkShaders("../Assets/shader/ScreenQuadVertexShader.glsl", "../Assets/shader/DebugFragmentShader.glsl");
+        //m_displayProgram->LinkShaders("../Assets/shader/MultiLightsShadowTex_VertexShader.glsl", "../Assets/shader/MultiLightsShadowTex_FragShader.glsl");
 
         m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
         m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -164,18 +164,18 @@ void cViewerApplication::MainLoopFunc()
             m_playerMesh.lock()->SetModelMat(i_modelMat);
         }
     }
-
-    {
-        
-        m_displayProgram->RenderGBuffer(m_projectionMat, m_viewMat);
-    }
+    
     // shadow map
     {
         m_displayProgram->RenderMultiSpotLightShadowMap(m_lights,
             glm::vec3(0.0f),
             120.0f, 0.1f, 10.0f);
     }
-
+    // first pass
+    {
+        m_displayProgram->RenderGBuffer(m_projectionMat, m_viewMat);
+    }
+    // second pass
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -183,10 +183,17 @@ void cViewerApplication::MainLoopFunc()
     glViewport(0, 0, m_windowWidth, m_windowHeight);
 
     m_displayProgram->SetLights(m_lights);
+    glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
+    glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
+    m_displayProgram->SetCameraPosition(i_cameraPos);
     m_displayProgram->DrawCallWithGBuffer();
     
     /*
     {
+        m_displayProgram->RenderMultiSpotLightShadowMap(m_lights,
+            glm::vec3(0.0f),
+            120.0f, 0.1f, 10.0f);
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);

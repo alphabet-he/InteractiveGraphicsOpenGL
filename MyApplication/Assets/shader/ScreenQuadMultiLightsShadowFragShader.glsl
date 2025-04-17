@@ -17,7 +17,7 @@ uniform sampler2D gObjColor;
 uniform sampler2D gAlbedoSpec;
 
 uniform float k_ambient = 0.1f;
-uniform float shininess = 16.0f;
+uniform float shininess = 64.0;
 uniform vec3 camera_position;
 
 uniform int lightNum;
@@ -40,6 +40,10 @@ float computeShadow(int i, vec3 fragPos) {
 
     // optional: discard out of light frustum
     if (projCoords.z > 1.0) shadow = 0.0;
+
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+    projCoords.y < 0.0 || projCoords.y > 1.0 ||
+    projCoords.z < 0.0 || projCoords.z > 1.0)  shadow = 0.0;
 
     return shadow;
 }
