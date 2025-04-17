@@ -219,7 +219,7 @@ public:
 
 	void InitializeGBuffer(uint16_t i_windowWidth, uint16_t i_windowHeight);
 
-	void RenderGBuffer();
+	void RenderGBuffer(glm::mat4 i_projMat, glm::mat4 i_viewMat);
 
 	void DrawCallWithGBuffer();
 
@@ -229,6 +229,10 @@ public:
 
 	inline std::string GetFragmentShaderPath() {
 		return m_fragmentShaderPath;
+	}
+
+	inline GLuint GetShaderProgram() {
+		return m_shaderProgram;
 	}
 
 private:

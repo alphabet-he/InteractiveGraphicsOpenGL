@@ -27,6 +27,7 @@ void cViewerApplication::CustomInitialization()
         );
 
         m_displayProgram->LinkShaders("../Assets/shader/ScreenQuadVertexShader.glsl", "../Assets/shader/ScreenQuadMultiLightsShadowFragShader.glsl");
+        //m_displayProgram->LinkShaders("../Assets/shader/ScreenQuadVertexShader.glsl", "../Assets/shader/DebugFragmentShader.glsl");
 
         m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
         m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -164,6 +165,10 @@ void cViewerApplication::MainLoopFunc()
         }
     }
 
+    {
+        
+        m_displayProgram->RenderGBuffer(m_projectionMat, m_viewMat);
+    }
     // shadow map
     {
         m_displayProgram->RenderMultiSpotLightShadowMap(m_lights,
@@ -171,20 +176,33 @@ void cViewerApplication::MainLoopFunc()
             120.0f, 0.1f, 10.0f);
     }
 
-    // first pass - G buffer
-    {
-        m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
-        m_displayProgram->RenderGBuffer();
-    }
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glViewport(0, 0, m_windowWidth, m_windowHeight);
 
-    // second pass - lighting and shadow
+    m_displayProgram->SetLights(m_lights);
+    m_displayProgram->DrawCallWithGBuffer();
+    
+    /*
     {
-        m_displayProgram->SetLights(m_lights);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glViewport(0, 0, m_windowWidth, m_windowHeight);
+
+        m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
         glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
         glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
         m_displayProgram->SetCameraPosition(i_cameraPos);
-        m_displayProgram->DrawCallWithGBuffer();
+
+        m_displayProgram->SetLights(m_lights);
+
+        m_displayProgram->DrawCall();
     }
+    */
 }
 
 void cViewerApplication::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
