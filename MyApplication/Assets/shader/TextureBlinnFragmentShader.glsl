@@ -1,8 +1,8 @@
 #version 330 core
 
-in vec3 vertex_normal_out;
-in vec3 vertex_position_out;
-in vec2 uv_coordinate_out;
+in vec3 Normal;
+in vec3 FragPos;
+in vec2 TexCoord;
 
 out vec4 frag_color;
 
@@ -22,16 +22,16 @@ uniform sampler2D texture_Ks;
 
 void main(){
 
-	vec3 L = normalize(light_position - vertex_position_out); // light direction
-	vec3 V = normalize(camera_position - vertex_position_out); // view direction
+	vec3 L = normalize(light_position - FragPos); // light direction
+	vec3 V = normalize(camera_position - FragPos); // view direction
 	vec3 H = normalize(L + V); // half way vector
 
 	vec3 ambient = k_ambient * light_color;
-	vec3 diffuse = k_diffuse * light_color * max(0, dot(vertex_normal_out, L));
-	vec3 k_specular = texture(texture_Ks, uv_coordinate_out).rgb;
-	vec3 specular = k_specular * light_color * pow(max(0, dot(vertex_normal_out, H)), shininess);
+	vec3 diffuse = k_diffuse * light_color * max(0, dot(Normal, L));
+	vec3 k_specular = texture(texture_Ks, TexCoord).rgb;
+	vec3 specular = k_specular * light_color * pow(max(0, dot(Normal, H)), shininess);
 
-	vec4 texColor = texture(texture_Kd, uv_coordinate_out);
+	vec4 texColor = texture(texture_Kd, TexCoord);
 	vec3 object_color = texColor.rgb;
 	float alpha = texColor.a;
 	if (alpha < 0.1)

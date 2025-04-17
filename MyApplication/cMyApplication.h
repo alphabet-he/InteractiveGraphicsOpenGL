@@ -40,8 +40,9 @@ private:
 	glm::mat4 m_viewMat;
 	glm::mat4 m_projectionMat;
 
-	std::weak_ptr<cMesh> m_lightMesh;
 	std::weak_ptr<cMesh> m_playerMesh;
+
+	std::vector<std::pair<std::weak_ptr<cMesh>, glm::vec3>> m_lights;
 
 	/*
 	* 
@@ -52,16 +53,22 @@ private:
 	std::vector<std::string> m_playerSprites;
 	int m_newMeshSelected = -1;
 	int m_newPlayerSpriteSelected = -1;
+	glm::vec3 m_lightingColorPicked = glm::vec3(-1, -1, -1);
 
 	sMeshInstance* m_selectedMesh = nullptr;
 
 	eTransformation m_transformationAction = COUNT;
 
+	glm::mat4 m_spritePlaneModelMat;
+	glm::mat4 m_lightModelMat;
+
+	/*
+	* ui elements
+	*/
 	sPanel* m_meshSelectionPanel;
 	sPanel* m_spriteSelectionPanel;
-
-	glm::mat4 m_spritePlaneModelMat;
-
+	sPanel* m_lightingPanel;
+	sRgbPicker* m_lightingRgbPicker;
 };
 
 struct sMeshSelectionButton :sImageButton {

@@ -47,6 +47,15 @@ struct sImageButton : sUIComponent {
 	void Render() override;
 };
 
+struct sRgbPicker : sUIComponent {
+	sRgbPicker(float i_positionX, float i_positionY,
+		float i_size) :
+		sUIComponent(i_positionX, i_positionY, i_size, i_size, -1){}
+
+	float m_color[3] = { 0.0f, 0.0f, 0.0f };
+	void Render() override;
+};
+
 struct sPanel {
 	bool b_active = true;
 

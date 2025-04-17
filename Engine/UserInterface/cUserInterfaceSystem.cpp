@@ -79,3 +79,10 @@ void sButton::Render()
 		}
 	}
 }
+
+void sRgbPicker::Render()
+{
+	ImGui::SetCursorPos(ImVec2(m_position));
+	ImGui::PushItemWidth(m_size.x);
+	ImGui::ColorEdit3("Color", m_color, ImGuiColorEditFlags_NoInputs);
+}

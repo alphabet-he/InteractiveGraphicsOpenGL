@@ -108,7 +108,8 @@ Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
+xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -133,7 +134,8 @@ Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
+xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -154,7 +156,8 @@ Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
+xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -179,7 +182,8 @@ Shell32.lib;opengl32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y "$(SolutionDir)External\GLEW\bin\Release\$(Platform)\glew32.dll" "$(OutDir)"
+xcopy /Y /E "$(SolutionDir)MyApplication\Assets\" "$(SolutionDir)out\$(Platform)\$(Configuration)\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

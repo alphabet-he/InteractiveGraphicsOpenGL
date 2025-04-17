@@ -29,7 +29,9 @@ void cMyApplication::CustomInitialization()
 			(float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
 			0.1f, 100.0f  // Near & Far plane
 		);
-		m_displayProgram->LinkShaders("../Assets/shader/TextureVertexShader.glsl", "../Assets/shader/TextureBlinnFragmentShader.glsl");
+		m_displayProgram->LinkShaders("../Assets/shader/MultiLightsShadowTex_VertexShader.glsl", "../Assets/shader/MultiLightsShadowTex_FragShader.glsl");
+		//m_displayProgram->LinkShaders("../Assets/shader/ShadowVertexShader.glsl", "../Assets/shader/ShadowFragmentShader.glsl");
+		//m_displayProgram->LinkShaders("../Assets/shader/TextureVertexShader.glsl", "../Assets/shader/TextureBlinnFragmentShader.glsl");
 
 		m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
 		m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -39,20 +41,23 @@ void cMyApplication::CustomInitialization()
 
 	// light program
 	{
-
 		m_lightProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, false, false, false));
 		m_lightProgram->LinkShaders("../Assets/shader/StandardVertexShader.glsl", "../Assets/shader/StandardFragmentShader.glsl");
-
 		sMeshInstance* i_light = m_meshSystem->RegisterMesh("../Assets/sphere.obj");
-		m_lightMesh = i_light->GetMesh();
-		m_lightProgram->UploadMesh(m_lightMesh, new sTextureUsage(false, false, false));
+		m_lightProgram->UploadMesh(i_light->GetMesh(), new sTextureUsage(false, false, false));
 		{
 			glm::mat4 i_ModelMat = glm::mat4(1.0f);
 			i_ModelMat = glm::translate(i_ModelMat, glm::vec3(0.8f, 1.2f, 1.0f));
 			i_ModelMat = glm::scale(i_ModelMat, glm::vec3(0.02f));
-			m_lightMesh.lock()->SetModelMat(i_ModelMat);
+			i_light->GetMesh().lock()->SetModelMat(i_ModelMat);
+		}
+		{
+			glm::vec3 i_center = (i_light->m_boundingBoxMax + i_light->m_boundingBoxMin) * 0.5f;
+			m_lightModelMat = glm::scale(glm::mat4(1.0f), glm::vec3(0.02f));
+			m_lightModelMat = glm::translate(m_lightModelMat, -i_center);
 		}
 		m_lightProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+		m_lights.push_back({ i_light->GetMesh(), glm::vec3(1.0f, 1.0f, 1.0f) });
 	}
 
 	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
@@ -205,14 +210,37 @@ void cMyApplication::CustomInitialization()
 		m_UiSystem->AddPanel(m_spriteSelectionPanel);
 	}
 
+	// lighting ui
+	{
+		m_lightingPanel = new sPanel("Lighting", 0, m_windowHeight - 128, m_windowWidth, 128, 1, 1, 1, 0.1);
+		m_lightingRgbPicker = new sRgbPicker(32, 32, 96);
+
+		sButton* i_button = new sButton(
+			214, 48,
+			64, 32,
+			"Add",
+			[this]() {
+				m_lightingColorPicked = glm::vec3(m_lightingRgbPicker->m_color[0], 
+					m_lightingRgbPicker->m_color[1],
+					m_lightingRgbPicker->m_color[2]);
+			}
+		);
+		m_lightingPanel->b_active = false;
+		m_lightingPanel->m_components.push_back(m_lightingRgbPicker);
+		m_lightingPanel->m_components.push_back(i_button);
+		m_UiSystem->AddPanel(m_lightingPanel);
+
+	}
+
 	// switching panel ui
 	{
-		sPanel* i_panel = new sPanel("SwitchingPanel", 0, m_windowHeight - 128 - 32, 158, 32, 1, 1, 1, 0.1);
+		sPanel* i_panel = new sPanel("SwitchingPanel", 0, m_windowHeight - 128 - 32, 252, 32, 1, 1, 1, 0.1);
 		sButton* i_meshButton = new sButton(
 			0, 0,
 			64, 32,
 			"Mesh",
 			[this]() {
+				m_lightingPanel->b_active = false;
 				m_spriteSelectionPanel->b_active = false;
 				m_meshSelectionPanel->b_active = true;
 			}
@@ -222,12 +250,24 @@ void cMyApplication::CustomInitialization()
 			94, 32,
 			"PlayerPawn",
 			[this]() {
+				m_lightingPanel->b_active = false;
 				m_meshSelectionPanel->b_active = false;
 				m_spriteSelectionPanel->b_active = true;
 			}
 		);
+		sButton* i_lightingButton = new sButton(
+			158, 0,
+			94, 32,
+			"Lighting",
+			[this]() {
+				m_meshSelectionPanel->b_active = false;
+				m_spriteSelectionPanel->b_active = false;
+				m_lightingPanel->b_active = true;
+			}
+		);
 		i_panel->m_components.push_back(i_meshButton);
 		i_panel->m_components.push_back(i_spriteButton);
+		i_panel->m_components.push_back(i_lightingButton);
 		m_UiSystem->AddPanel(i_panel);
 	}
 
@@ -301,14 +341,17 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			m_viewMat, m_projectionMat, i_viewport);
 		glm::vec3 rayDir = glm::normalize(rayEnd - rayStart);
 
-		if (m_newMeshSelected != -1 || m_newPlayerSpriteSelected != -1) {
+		if (m_newMeshSelected != -1 || m_newPlayerSpriteSelected != -1 || m_lightingColorPicked != glm::vec3(-1, -1, -1)) {
 
 			std::string i_filename;
 			if (m_newMeshSelected != -1) {
 				i_filename = m_fileNameModelPairs[m_newMeshSelected].first;
 			}
-			else {
+			else if (m_newPlayerSpriteSelected != -1) {
 				i_filename = m_playerSprites[m_newPlayerSpriteSelected];
+			}
+			else {
+				i_filename = "../Assets/sphere.obj";
 			}
 			bool b_isPng = false;
 			const char* i_meshName;
@@ -321,18 +364,31 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			}
 			
 			sMeshInstance* i_instance = m_meshSystem->RegisterMesh(i_meshName);
-			m_displayProgram->UploadMesh(i_instance->GetMesh(), new sTextureUsage(false, true, false));
+			glm::vec3 i_worldPos;
+			if (m_lightingColorPicked != glm::vec3(-1, -1, -1)) {
+				m_lightProgram->UploadMesh(i_instance->GetMesh(), new sTextureUsage(false, false, false));
+			}
+			else {
+				m_displayProgram->UploadMesh(i_instance->GetMesh(), new sTextureUsage(false, true, false));
+			}
 			{
 				glm::mat4 i_model;
+				
+				i_worldPos = rayStart + rayDir * 5.0f;
+
 				if (b_isPng) {
 					i_model = m_spritePlaneModelMat;
+					i_model = glm::translate(i_model, i_worldPos);
+				}
+				else if (m_lightingColorPicked != glm::vec3(-1, -1, -1)) {
+					i_model = m_lightModelMat;
+					i_model = glm::translate(glm::mat4(1.0f), i_worldPos) * i_model;
 				}
 				else {
 					i_model = m_fileNameModelPairs[m_newMeshSelected].second;
+					i_model = glm::translate(i_model, i_worldPos);
 				}
-				
-				glm::vec3 i_worldPos = rayStart + rayDir * 5.0f;
-				i_model = glm::translate(i_model, i_worldPos);
+
 				i_instance->GetMesh().lock()->SetModelMat(i_model);
 			}
 			if (b_isPng) {
@@ -341,8 +397,13 @@ void cMyApplication::MouseButtonCallback(GLFWwindow* window, int button, int act
 			if (m_newPlayerSpriteSelected != -1) {
 				m_playerMesh = i_instance->GetMesh();
 			}
+			if (m_lightingColorPicked != glm::vec3(-1, -1, -1)) {
+				m_lights.push_back({ i_instance->GetMesh(), 
+					m_lightingColorPicked });
+			}
 			m_newMeshSelected = -1;
 			m_newPlayerSpriteSelected = -1;
+			m_lightingColorPicked = glm::vec3(-1, -1, -1);
 		}
 		else {
 			sMeshInstance* i = m_meshSystem->SelectMesh(rayStart, rayDir);
@@ -380,8 +441,17 @@ void cMyApplication::Export()
 			i_meshJson["model_mat"] = matArray;
 
 			// category
-			if (i.lock() == m_lightMesh.lock()) {
-				i_meshJson["category"] = "light";
+			for (const auto& [meshWeak, color] : m_lights) {
+				if (auto meshPtr = meshWeak.lock()) {
+					if (meshPtr == i.lock()) {
+						i_meshJson["category"] = "light";
+						i_meshJson["color"] = { color.x, color.y, color.z };
+						break;
+					}
+				}
+			}
+			if (i_meshJson["category"] == "light") {
+
 			}
 			else if (i.lock() == m_playerMesh.lock()) {
 				i_meshJson["category"] = "player";
@@ -401,9 +471,6 @@ void cMyApplication::Export()
 		}
 		
 		});
-
-	sceneJson["vertex_shader"] = m_displayProgram->GetVertexShaderPath();
-	sceneJson["fragment_shader"] = m_displayProgram->GetFragmentShaderPath();
 
 	std::ofstream file("../Export/scene.json");
 	if (!file) {
@@ -486,9 +553,21 @@ void cMyApplication::MainLoopFunc()
 		}
 	}
 
-	m_displayProgram->RenderSpotLightShadowMap(glm::vec3(m_lightMesh.lock()->m_modelMat[3]),
+	std::vector<sLight*> i_lightsToSubmit;
+	for (const auto& [meshWeak, color] : m_lights) {
+		if (auto meshPtr = meshWeak.lock()) {
+			i_lightsToSubmit.push_back(
+				new sLight(meshWeak.lock()->m_modelMat[3], color
+				));
+		}
+	}
+
+	m_displayProgram->RenderMultiSpotLightShadowMap(
+		i_lightsToSubmit,
 		glm::vec3(0.0f),
-		120.0f, 0.1f, 10.0f);
+		120.0f, 0.1f, 10.0f
+	);
+	
 
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -501,11 +580,11 @@ void cMyApplication::MainLoopFunc()
 		glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
 		glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
 		m_displayProgram->SetCameraPosition(i_cameraPos);
-		m_displayProgram->SetLightingPosition(glm::vec3(m_lightMesh.lock()->m_modelMat[3]));
+
+		m_displayProgram->SetLights(i_lightsToSubmit);
 
 		m_displayProgram->DrawCall();
 	}
-
 	{
 		m_lightProgram->SetMVPMatrix(m_viewMat, VIEW);
 		m_lightProgram->DrawCall();

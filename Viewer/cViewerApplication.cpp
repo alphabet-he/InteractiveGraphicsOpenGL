@@ -51,9 +51,7 @@ void cViewerApplication::CustomInitialization()
             0.1f, 100.0f  // Near & Far plane
         );
 
-        std::string i_vertexShader = sceneJson["vertex_shader"];
-        std::string i_fragmentShader = sceneJson["fragment_shader"];
-        m_displayProgram->LinkShaders(i_vertexShader.c_str(), i_fragmentShader.c_str());
+        m_displayProgram->LinkShaders("../Assets/shader/MultiLightsShadowTex_VertexShader.glsl", "../Assets/shader/MultiLightsShadowTex_FragShader.glsl");
 
         m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
         m_displayProgram->InitializeShadowMap(2048, 2048);
@@ -66,7 +64,10 @@ void cViewerApplication::CustomInitialization()
             glm::mat4 i_modelMat = glm::make_mat4(i_flatModelMat.data());
 
             if (i_meshJson["category"] == "light") {
-                m_lightPos = glm::vec3(i_modelMat[3]);
+                glm::vec3 i_lightPos = glm::vec3(i_modelMat[3]);
+                glm::vec3 i_lightColor = glm::vec3(i_meshJson["color"][0].get<float>(), 
+                    i_meshJson["color"][1].get<float>(),
+                    i_meshJson["color"][2].get<float>());
             }
             else {
                 // create mesh
@@ -156,9 +157,11 @@ void cViewerApplication::MainLoopFunc()
     }
 
     {
+        /*
         m_displayProgram->RenderSpotLightShadowMap(m_lightPos,
             glm::vec3(0.0f),
             120.0f, 0.1f, 10.0f);
+        */
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -170,7 +173,7 @@ void cViewerApplication::MainLoopFunc()
         glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
         glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
         m_displayProgram->SetCameraPosition(i_cameraPos);
-        m_displayProgram->SetLightingPosition(m_lightPos);
+        m_displayProgram->SetLights(m_lights);
 
         m_displayProgram->DrawCall();
     }

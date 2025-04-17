@@ -63,6 +63,14 @@ public:
 	inline void SetModelMat(const glm::mat4& i_model) { m_modelMat = i_model; };
 };
 
+struct sLight {
+	glm::vec3 m_pos;
+	glm::vec3 m_color;
+
+	sLight(glm::vec3 i_pos, glm::vec3 i_color) :
+		m_pos(i_pos), m_color(i_color) {}
+};
+
 // Bitmask Flags for Attributes
 enum eVertexAttributeFlags {
 	POSITION = 1 << 0, // 0001
@@ -110,6 +118,7 @@ struct sShadowMapInfo {
 	uint16_t m_textureWidth, m_textureHeight;
 	GLuint m_shadowShaderProgram, m_shadowShaderViewMat, m_shadowShaderProjMat, m_shadowShaderModelMat;
 	GLuint m_shadowMapTexPosition;
+	std::vector<std::pair<glm::mat4, GLuint>> m_multiLightsDataArray;
 };
 
 struct sGeometryShaderProgram {
@@ -142,6 +151,7 @@ private:
 	GLuint m_textureKa, m_textureKd, m_textureKs;
 	GLuint m_textureSkyboxReflection, m_textureNormalMap, m_textureDisplacementMap;
 	GLuint m_shaderCameraPosition, m_shaderLightingPosition;
+	GLuint m_shaderLightNumPostion;
 	GLuint m_shaderTessLevelPosition;
 
 	size_t m_bufferSize;
@@ -168,6 +178,7 @@ public:
 
 	void SetCameraPosition(glm::vec3 i_cameraPos);
 	void SetLightingPosition(glm::vec3 i_lightPos);
+	void SetLights(std::vector<sLight*> i_lights);
 
 	void SetTessellationLevel(int i_level);
 
@@ -185,9 +196,13 @@ public:
 	// spot light
 	GLuint RenderSpotLightShadowMap(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation,
 		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane);
+	void RenderMultiSpotLightShadowMap(std::vector<sLight*> i_lights, glm::vec3 i_targetLocation,
+		float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane);
+
 	// directional light
 	GLuint RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
 		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane);
+	//TODO multiple directional light
 
 	inline std::string GetVertexShaderPath() {
 		return m_vertexShaderPath;

@@ -26,7 +26,7 @@ private:
 	glm::mat4 m_viewMat;
 	glm::mat4 m_projectionMat;
 
-	glm::vec3 m_lightPos;
+	std::vector<sLight*> m_lights;
 
 	std::weak_ptr<cMesh> m_playerMesh;
 

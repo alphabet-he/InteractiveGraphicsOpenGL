@@ -275,10 +275,19 @@ void cVertexShaderProgram::LinkShaders(char const* i_vertexShaderFilename, char 
 	glAttachShader(m_shaderProgram, i_fragmentShader->GetID());
 	glLinkProgram(m_shaderProgram);
 
+	GLint linkStatus;
+	glGetProgramiv(m_shaderProgram, GL_LINK_STATUS, &linkStatus);
+	if (linkStatus == GL_FALSE) {
+		char log[512];
+		glGetProgramInfoLog(m_shaderProgram, 512, NULL, log);
+		std::cerr << "Shader link failed:\n" << log << std::endl;
+	}
+
+	GetShaderUniforms();
+
 	delete i_vertexShader;
 	delete i_fragmentShader;
 
-	GetShaderUniforms();
 }
 
 void cVertexShaderProgram::SetTessellationShader(char const* i_vertexShaderFilename, char const* i_tessellationControlShaderFilename, char const* i_tessellationEvaluationShaderFilename, char const* i_fragmentShaderFilename)
@@ -349,6 +358,25 @@ void cVertexShaderProgram::SetLightingPosition(glm::vec3 i_lightPos)
 	glUniform3f(m_shaderLightingPosition, i_lightPos.x, i_lightPos.y, i_lightPos.z);
 }
 
+void cVertexShaderProgram::SetLights(std::vector<sLight*> i_lights) 
+{
+	glUseProgram(m_shaderProgram);
+	glUniform1i(m_shaderLightNumPostion, i_lights.size());
+	for (int i = 0; i < i_lights.size(); ++i) {
+		std::string indexStr = "Lights[" + std::to_string(i) + "]";
+		GLint posLoc = glGetUniformLocation(m_shaderProgram, (indexStr + ".position").c_str());
+		GLint colorLoc = glGetUniformLocation(m_shaderProgram, (indexStr + ".color").c_str());
+
+		if (posLoc != -1) {
+			glUniform3f(posLoc, i_lights[i]->m_pos.x, i_lights[i]->m_pos.y, i_lights[i]->m_pos.z);
+		}
+
+		if (colorLoc != -1) {
+			glUniform3f(colorLoc, i_lights[i]->m_color.x, i_lights[i]->m_color.y, i_lights[i]->m_color.z);
+		}
+	}
+}
+
 void cVertexShaderProgram::SetTessellationLevel(int i_level)
 {
 	if (!b_useTessellation) {
@@ -372,6 +400,11 @@ void cVertexShaderProgram::DrawCall()
 	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
 
 		if (auto i_mesh = it->lock()) {
+
+			if (i_mesh->m_textureBinding.find(FLAT_SPRITE) != i_mesh->m_textureBinding.end()) {
+				i_mesh->m_textureBinding.erase(DIFFUSE); // these two should not exist at the same time
+			}
+
 			int i_textureUnit = 0;
 
 			for (const auto& i_texBinding : i_mesh->m_textureBinding) {
@@ -418,8 +451,26 @@ void cVertexShaderProgram::DrawCall()
 					break;
 				case SHADOW_MAP:
 					if (m_shadowMapInfo) {
-						glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
-						glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, i_textureUnit);
+						if (m_shadowMapInfo->m_multiLightsDataArray.size() > 0) {
+							for (int i = 0; i < m_shadowMapInfo->m_multiLightsDataArray.size(); i++) {
+								std::string indexStr = "lightSpaceVP[" + std::to_string(i) + "]";
+								GLint lightSpaceVPPos = glGetUniformLocation(m_shaderProgram, indexStr.c_str());
+								glUniformMatrix4fv(lightSpaceVPPos, 1, GL_FALSE, glm::value_ptr(m_shadowMapInfo->m_multiLightsDataArray[i].first));
+
+								indexStr = "ShadowMap[" + std::to_string(i) + "]";
+								GLint shadowMapPos = glGetUniformLocation(m_shaderProgram, indexStr.c_str());
+
+								glActiveTexture(GL_TEXTURE0 + i_textureUnit);  // use current texture unit
+								glBindTexture(GL_TEXTURE_2D, m_shadowMapInfo->m_multiLightsDataArray[i].second);  // shadow texture ID
+								glUniform1i(shadowMapPos, i_textureUnit);  // tell shader to use this unit
+								i_textureUnit++;  // increment after binding
+							}
+						}
+						else {
+							glBindTexture(GL_TEXTURE_2D, i_texBinding.second);
+							glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, i_textureUnit);
+						}
+						
 					}
 					else {
 						std::cerr << "ERROR: No shadow map information" << std::endl;
@@ -687,7 +738,52 @@ GLuint cVertexShaderProgram::RenderSpotLightShadowMap(glm::vec3 i_lightLocation,
 	ComputeLightViewProjMat(i_lightLocation, i_targetLocation,
 		i_lightConeAgnle, i_lightingNearPlane, i_lightingFarPlane,
 		i_viewMatrix, i_projMatrix);
-	return RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+
+	GLuint ret = RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+
+	glm::mat4 i_lightSpaceVP = i_projMatrix * i_viewMatrix;
+
+	glUseProgram(m_shaderProgram);
+	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE,
+		glm::value_ptr(i_lightSpaceVP));
+
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i_mesh = it->lock()) {
+			i_mesh->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
+		}
+	}
+
+	return ret;
+}
+
+void cVertexShaderProgram::RenderMultiSpotLightShadowMap(std::vector<sLight*> i_lights, glm::vec3 i_targetLocation,
+	float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane)
+{
+	for (int i = 0; i < i_lights.size(); i++) {
+		glm::mat4 i_viewMatrix, i_projMatrix;
+		ComputeLightViewProjMat(i_lights[i]->m_pos, i_targetLocation,
+			i_lightConeAgnle, i_lightingNearPlane, i_lightingFarPlane,
+			i_viewMatrix, i_projMatrix);
+		
+		glm::mat4 i_lightSpaceVP = i_projMatrix * i_viewMatrix;
+		GLuint i_shadowTex = RenderShadowMapWithViewProjMat(i_viewMatrix, i_projMatrix);
+		
+		m_shadowMapInfo->m_multiLightsDataArray.push_back({ i_lightSpaceVP, i_shadowTex });
+	}
+
+	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+		if (auto i_mesh = it->lock()) {
+			i_mesh->UploadTexture(-1, SHADOW_MAP);
+			++it;
+		}
+		else {
+			it = m_meshes.erase(it);
+		}
+	}
 }
 
 GLuint cVertexShaderProgram::RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
@@ -745,6 +841,8 @@ void cVertexShaderProgram::GetShaderUniforms()
 	m_shaderCameraPosition = glGetUniformLocation(m_shaderProgram, "camera_position");
 	m_shaderLightingPosition = glGetUniformLocation(m_shaderProgram, "light_position");
 	m_shaderTessLevelPosition = glGetUniformLocation(m_shaderProgram, "tessellation_level");
+
+	m_shaderLightNumPostion = glGetUniformLocation(m_shaderProgram, "lightNum");
 }
 
 void cVertexShaderProgram::ComputeLightViewProjMat(glm::vec3 i_lightLocation, glm::vec3 i_targetLocation, float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane, glm::mat4& o_viewMatrix, glm::mat4& o_projMatrix)
@@ -776,8 +874,6 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 	glViewport(0, 0, m_shadowMapInfo->m_textureWidth, m_shadowMapInfo->m_textureHeight);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::mat4 i_lightSpaceVP = i_projMatrix * i_viewMatrix;
-
 	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderViewMat,
 		1, GL_FALSE, glm::value_ptr(i_viewMatrix));
 	glUniformMatrix4fv(m_shadowMapInfo->m_shadowShaderProjMat,
@@ -798,19 +894,6 @@ GLuint cVertexShaderProgram::RenderShadowMapWithViewProjMat(glm::mat4 i_viewMatr
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glUseProgram(m_shaderProgram);
-	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "lightSpaceVP"), 1, GL_FALSE,
-		glm::value_ptr(i_lightSpaceVP));
-
-	for (auto it = m_meshes.begin(); it != m_meshes.end();) {
-		if (auto i_mesh = it->lock()) {
-			i_mesh->UploadTexture(m_shadowMapInfo->m_texture, SHADOW_MAP);
-			++it;
-		}
-		else {
-			it = m_meshes.erase(it);
-		}
-	}
 	return m_shadowMapInfo->m_texture;
 }
 
