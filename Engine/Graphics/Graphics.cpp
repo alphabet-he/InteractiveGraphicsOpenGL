@@ -677,6 +677,212 @@ GLuint cVertexShaderProgram::RenderToScreenTexture(glm::vec3 i_cameraLocation, g
 	return m_screenTextureInfo->m_texture;
 }
 
+void cVertexShaderProgram::InitializeGBuffer(uint16_t i_windowWidth, uint16_t i_windowHeight)
+{
+	m_gBufferInfo = new sGBufferInfo();
+
+	m_gBufferInfo->m_windowWidth = i_windowWidth;
+	m_gBufferInfo->m_windowHeight = i_windowHeight;
+
+	glGenFramebuffers(1, &(m_gBufferInfo->m_gBuffer));
+	glBindFramebuffer(GL_FRAMEBUFFER, m_gBufferInfo->m_gBuffer);
+
+	// gPosition
+	glGenTextures(1, &(m_gBufferInfo->m_gPosition));
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, i_windowWidth, i_windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_gBufferInfo->m_gPosition, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// gNormal
+	glGenTextures(1, &(m_gBufferInfo->m_gNormal));
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, i_windowWidth, i_windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_gBufferInfo->m_gNormal, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// gObjColor
+	glGenTextures(1, &(m_gBufferInfo->m_gObjColor));
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gObjColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, i_windowWidth, i_windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, m_gBufferInfo->m_gObjColor, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// gAlbedoSpec
+	glGenTextures(1, &(m_gBufferInfo->m_gAlbedoSpec));
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gAlbedoSpec);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, i_windowWidth, i_windowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, m_gBufferInfo->m_gAlbedoSpec, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Set color attachments in use
+	GLuint attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+	glDrawBuffers(4, attachments);
+
+	// render buffer object
+	glGenRenderbuffers(1, &(m_gBufferInfo->m_RBO));
+	glBindRenderbuffer(GL_RENDERBUFFER, m_gBufferInfo->m_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, i_windowWidth, i_windowHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_gBufferInfo->m_RBO);
+
+	// unbind framebuffer
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// create gBuffer render program (first pass)
+	cy::GLSLShader* i_vertexShader = new cy::GLSLShader();
+	cy::GLSLShader* i_fragmentShader = new cy::GLSLShader();
+	i_vertexShader->CompileFile("../Assets/shader/TextureVertexShader.glsl", GL_VERTEX_SHADER);
+	i_fragmentShader->CompileFile("../Assets/shader/gBufferFragmentShader.glsl", GL_FRAGMENT_SHADER);
+	m_gBufferInfo->m_gBufferShaderProgram = glCreateProgram();
+	glAttachShader(m_gBufferInfo->m_gBufferShaderProgram, i_vertexShader->GetID());
+	glAttachShader(m_gBufferInfo->m_gBufferShaderProgram, i_fragmentShader->GetID());
+	glLinkProgram(m_gBufferInfo->m_gBufferShaderProgram);
+
+	GLint linkStatus;
+	glGetProgramiv(m_gBufferInfo->m_gBufferShaderProgram, GL_LINK_STATUS, &linkStatus);
+	if (linkStatus == GL_FALSE) {
+		char log[512];
+		glGetProgramInfoLog(m_gBufferInfo->m_gBufferShaderProgram, 512, NULL, log);
+		std::cerr << "Shader link failed:\n" << log << std::endl;
+	}
+
+	// get shader int
+	glUseProgram(m_shaderProgram);
+	m_gBufferInfo->m_gPositionInt = glGetUniformLocation(m_shaderProgram, "gPosition");
+	m_gBufferInfo->m_gNormalInt = glGetUniformLocation(m_shaderProgram, "gNormal");
+	m_gBufferInfo->m_gObjColorInt = glGetUniformLocation(m_shaderProgram, "gObjColor");
+	m_gBufferInfo->m_gAlbedoSpecInt = glGetUniformLocation(m_shaderProgram, "gAlbedoSpec");
+
+	// create quad VAO/VBO
+	float quadVertices[] = {
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,  // top-left
+		-1.0f, -1.0f,  0.0f, 0.0f,  // bottom-left
+		 1.0f, -1.0f,  1.0f, 0.0f,  // bottom-right
+
+		-1.0f,  1.0f,  0.0f, 1.0f,  // top-left
+		 1.0f, -1.0f,  1.0f, 0.0f,  // bottom-right
+		 1.0f,  1.0f,  1.0f, 1.0f   // top-right
+	};
+
+	glGenVertexArrays(1, &(m_gBufferInfo->m_quadVAO));
+	glGenBuffers(1, &(m_gBufferInfo->m_quadVBO));
+
+	glBindVertexArray(m_gBufferInfo->m_quadVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_gBufferInfo->m_quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+
+	// layout(location = 0) in vec2 aPos;
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+	// layout(location = 1) in vec2 aTex;
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glBindVertexArray(0);
+}
+
+void cVertexShaderProgram::RenderGBuffer()
+{
+	if (!m_gBufferInfo) {
+		std::cout << "ERROR: G Buffer not initialized!" << std::endl;
+		return;
+	}
+
+	// first pass
+	glUseProgram(m_gBufferInfo->m_gBufferShaderProgram);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_gBufferInfo->m_gBuffer);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glViewport(0, 0, m_gBufferInfo->m_windowWidth, m_gBufferInfo->m_windowHeight);
+
+	DrawCall();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void cVertexShaderProgram::DrawCallWithGBuffer() 
+{
+	if (!m_gBufferInfo) {
+		std::cout << "ERROR: G Buffer not initialized!" << std::endl;
+		return;
+	}
+
+	glUseProgram(m_shaderProgram);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, m_gBufferInfo->m_windowWidth, m_gBufferInfo->m_windowHeight);
+
+	if (m_shadowMapInfo) {
+		if (m_shadowMapInfo->m_multiLightsDataArray.size() > 0) {
+			int i_textureUnit = 0;
+			for (int i = 0; i < m_shadowMapInfo->m_multiLightsDataArray.size(); i++) {
+				std::string indexStr = "lightSpaceVP[" + std::to_string(i) + "]";
+				GLint lightSpaceVPPos = glGetUniformLocation(m_shaderProgram, indexStr.c_str());
+				glUniformMatrix4fv(lightSpaceVPPos, 1, GL_FALSE, glm::value_ptr(m_shadowMapInfo->m_multiLightsDataArray[i].first));
+
+				indexStr = "ShadowMap[" + std::to_string(i) + "]";
+				GLint shadowMapPos = glGetUniformLocation(m_shaderProgram, indexStr.c_str());
+
+				glActiveTexture(GL_TEXTURE0 + i_textureUnit);  // use current texture unit
+				glBindTexture(GL_TEXTURE_2D, m_shadowMapInfo->m_multiLightsDataArray[i].second);  // shadow texture ID
+				glUniform1i(shadowMapPos, i_textureUnit);  // tell shader to use this unit
+				i_textureUnit++;  // increment after binding
+			}
+		}
+		else {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, m_shadowMapInfo->m_texture);
+			glUniform1i(m_shadowMapInfo->m_shadowMapTexPosition, 0);
+		}
+
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gPosition);
+	glUniform1i(m_gBufferInfo->m_gPositionInt, 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gNormal);
+	glUniform1i(m_gBufferInfo->m_gNormalInt, 1);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gObjColor);
+	glUniform1i(m_gBufferInfo->m_gObjColorInt, 2);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, m_gBufferInfo->m_gAlbedoSpec);
+	glUniform1i(m_gBufferInfo->m_gAlbedoSpecInt, 3);
+
+	glBindVertexArray(m_gBufferInfo->m_quadVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+}
+
 void cVertexShaderProgram::InitializeShadowMap(uint16_t i_width, uint16_t i_height)
 {
 	m_shadowMapInfo = new sShadowMapInfo();

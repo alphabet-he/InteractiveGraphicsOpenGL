@@ -14,10 +14,32 @@ cViewerApplication::cViewerApplication()
 void cViewerApplication::CustomInitialization()
 {
 
-	using json = nlohmann::json;
+
+    // set up display program with deferred shading
+    {
+        m_displayProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, true, false));
+        m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
+        m_viewMatWhenPressed = m_viewMat;
+        m_projectionMat = glm::perspective(
+            glm::radians(45.0f),    // Field of View
+            (float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
+            0.1f, 100.0f  // Near & Far plane
+        );
+
+        m_displayProgram->LinkShaders("../Assets/shader/ScreenQuadVertexShader.glsl", "../Assets/shader/ScreenQuadMultiLightsShadowFragShader.glsl");
+
+        m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
+        m_displayProgram->InitializeShadowMap(2048, 2048);
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    // initialize g buffer
+    m_displayProgram->InitializeGBuffer(m_windowWidth, m_windowHeight);
 
     // parse json and load scene
 	{
+        using json = nlohmann::json;
         json sceneJson;
 
         try {
@@ -41,22 +63,6 @@ void cViewerApplication::CustomInitialization()
             exit(1);
         }
 
-        // set up display program
-        m_displayProgram = new cVertexShaderProgram(new sVertexBufferStruct(true, true, true, false));
-        m_viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0));
-        m_viewMatWhenPressed = m_viewMat;
-        m_projectionMat = glm::perspective(
-            glm::radians(45.0f),    // Field of View
-            (float)m_windowWidth / (float)m_windowHeight, // Aspect Ratio
-            0.1f, 100.0f  // Near & Far plane
-        );
-
-        m_displayProgram->LinkShaders("../Assets/shader/MultiLightsShadowTex_VertexShader.glsl", "../Assets/shader/MultiLightsShadowTex_FragShader.glsl");
-
-        m_displayProgram->SetMVPMatrix(m_projectionMat, PROJECTION);
-        m_displayProgram->InitializeShadowMap(2048, 2048);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         for (const auto& i_meshJson : sceneJson["meshes"]) {
 
@@ -68,6 +74,7 @@ void cViewerApplication::CustomInitialization()
                 glm::vec3 i_lightColor = glm::vec3(i_meshJson["color"][0].get<float>(), 
                     i_meshJson["color"][1].get<float>(),
                     i_meshJson["color"][2].get<float>());
+                m_lights.push_back(new sLight(i_lightPos, i_lightColor));
             }
             else {
                 // create mesh
@@ -95,6 +102,7 @@ void cViewerApplication::CustomInitialization()
             }
         }
 	}
+
 }
 
 void cViewerApplication::MainLoopFunc()
@@ -156,26 +164,26 @@ void cViewerApplication::MainLoopFunc()
         }
     }
 
+    // shadow map
     {
-        /*
-        m_displayProgram->RenderSpotLightShadowMap(m_lightPos,
+        m_displayProgram->RenderMultiSpotLightShadowMap(m_lights,
             glm::vec3(0.0f),
             120.0f, 0.1f, 10.0f);
-        */
+    }
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glViewport(0, 0, m_windowWidth, m_windowHeight);
-
+    // first pass - G buffer
+    {
         m_displayProgram->SetMVPMatrix(m_viewMat, VIEW);
+        m_displayProgram->RenderGBuffer();
+    }
+
+    // second pass - lighting and shadow
+    {
+        m_displayProgram->SetLights(m_lights);
         glm::mat4 i_viewInverse = glm::inverse(m_viewMat);
         glm::vec3 i_cameraPos = glm::vec3(i_viewInverse[3]);
         m_displayProgram->SetCameraPosition(i_cameraPos);
-        m_displayProgram->SetLights(m_lights);
-
-        m_displayProgram->DrawCall();
+        m_displayProgram->DrawCallWithGBuffer();
     }
 }
 

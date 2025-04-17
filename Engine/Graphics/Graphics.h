@@ -121,6 +121,18 @@ struct sShadowMapInfo {
 	std::vector<std::pair<glm::mat4, GLuint>> m_multiLightsDataArray;
 };
 
+struct sGBufferInfo {
+	uint16_t m_windowWidth, m_windowHeight;
+
+	GLuint m_gBuffer, m_RBO;
+	GLuint m_gPosition, m_gNormal, m_gObjColor, m_gAlbedoSpec;
+
+	GLuint m_gBufferShaderProgram;
+	GLuint m_gPositionInt, m_gNormalInt, m_gObjColorInt, m_gAlbedoSpecInt;
+
+	GLuint m_quadVAO, m_quadVBO;
+};
+
 struct sGeometryShaderProgram {
 	GLuint m_shaderProgram;
 	GLuint m_shaderModelMat, m_shaderViewMat, m_shaderProjectionMat;
@@ -139,6 +151,7 @@ protected:
 
 	sScreenTextureInfo* m_screenTextureInfo = nullptr;
 	sShadowMapInfo* m_shadowMapInfo = nullptr;
+	sGBufferInfo* m_gBufferInfo = nullptr;
 	sGeometryShaderProgram* m_geometryShaderProgram = nullptr;
 
 	std::string m_vertexShaderPath, m_fragmentShaderPath;
@@ -203,6 +216,12 @@ public:
 	GLuint RenderDirectionalLightShadowMap(glm::vec3 i_lightDirection,
 		float i_orthoSize, float i_lightingNearPlane, float i_lightingFarPlane);
 	//TODO multiple directional light
+
+	void InitializeGBuffer(uint16_t i_windowWidth, uint16_t i_windowHeight);
+
+	void RenderGBuffer();
+
+	void DrawCallWithGBuffer();
 
 	inline std::string GetVertexShaderPath() {
 		return m_vertexShaderPath;
