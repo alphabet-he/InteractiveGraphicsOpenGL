@@ -763,6 +763,7 @@ GLuint cVertexShaderProgram::RenderSpotLightShadowMap(glm::vec3 i_lightLocation,
 void cVertexShaderProgram::RenderMultiSpotLightShadowMap(std::vector<sLight*> i_lights, glm::vec3 i_targetLocation,
 	float i_lightConeAgnle, float i_lightingNearPlane, float i_lightingFarPlane)
 {
+	m_shadowMapInfo->m_multiLightsDataArray.clear();
 	for (int i = 0; i < i_lights.size(); i++) {
 		glm::mat4 i_viewMatrix, i_projMatrix;
 		ComputeLightViewProjMat(i_lights[i]->m_pos, i_targetLocation,
